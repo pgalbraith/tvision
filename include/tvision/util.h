@@ -107,7 +107,7 @@ int snprintf( char _FAR *buffer, size_t size, const char _FAR *format, ... );
 int vsnprintf( char _FAR *buffer, size_t size, const char _FAR *format,
                void _FAR *arglist );
 
-#elif !defined( _WIN32 )
+#elif !defined( _WIN32 ) && !defined( __WATCOMC__ )
 
 int stricmp( const char *s1, const char *s2 ) noexcept;
 int strnicmp( const char *s1, const char *s2, size_t maxlen ) noexcept;

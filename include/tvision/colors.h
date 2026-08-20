@@ -10,7 +10,7 @@
 #ifndef TVISION_COLORS_H
 #define TVISION_COLORS_H
 
-#if defined( __BORLANDC__ )
+#if defined( __BORLANDC__ ) || defined( __WATCOMC__ )
 
 // A BIOS color attribute byte. The lower four bits represent the foreground
 // color and the higher four bits the background color. Depending on the video

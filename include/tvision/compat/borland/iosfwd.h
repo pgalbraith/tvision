@@ -10,6 +10,13 @@ class _EXPCLASS streambuf;
 typedef long streampos;
 typedef long streamoff;
 
+#elif defined( __WATCOMC__ )
+
+class ostream;
+class streambuf;
+typedef long streampos;
+typedef long streamoff;
+
 #else
 
 #include <iosfwd>

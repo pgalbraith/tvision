@@ -41,7 +41,7 @@ typedef unsigned long ulong;
 
 #include <stddef.h>
 
-#if !defined( __BORLANDC__ )
+#if !defined( __BORLANDC__ ) && !defined( __WATCOMC__ )
 #include <stdint.h>
 #else
 typedef char int8_t;
@@ -50,12 +50,14 @@ typedef long int32_t;
 typedef uchar uint8_t;
 typedef ushort uint16_t;
 typedef ulong uint32_t;
+#if !defined( __WATCOMC__ ) // Watcom's own <stddef.h> already provides these.
 typedef long intptr_t;
 typedef ulong uintptr_t;
 #endif
+#endif
 
 struct TScreenCell;
-#if defined( __BORLANDC__ )
+#if defined( __BORLANDC__ ) || defined( __WATCOMC__ )
 typedef uchar TColorAttr;
 typedef ushort TAttrPair;
 #else

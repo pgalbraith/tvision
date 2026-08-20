@@ -9,7 +9,7 @@
 #ifndef TVISION_SCRNCELL_H
 #define TVISION_SCRNCELL_H
 
-#if defined( __BORLANDC__ )
+#if defined( __BORLANDC__ ) || defined( __WATCOMC__ )
 
 // Struct that replicates the memory layout of a DOS text mode screen cell,
 // with optimized custom operators for converting to and from unsigned short.

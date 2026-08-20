@@ -14,7 +14,7 @@
  *
  */
 
-#if !defined( __BORLANDC__ )
+#if !defined( __BORLANDC__ ) && !defined( __WATCOMC__ )
 #define __FLAT__
 
 #if !defined( _WIN32 )

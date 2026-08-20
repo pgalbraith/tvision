@@ -50,7 +50,7 @@ public:
     {
     }
 
-#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
     constexpr TSpan(decltype(nullptr)) noexcept :
         TSpan()
     {
