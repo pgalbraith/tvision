@@ -25,11 +25,11 @@
 #endif  // __STRING_H
 
 #if !defined( __MEM_H )
-#include <mem.h>
+#include <tvision/compat/borland/mem.h>
 #endif  // __MEM_H
 
 #if !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
 #if !defined( __STDLIB_H )

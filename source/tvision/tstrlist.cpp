@@ -24,11 +24,11 @@
 #endif  // __STRING_H
 
 #if !defined( __MEM_H )
-#include <mem.h>
+#include <tvision/compat/borland/mem.h>
 #endif  // __MEM_H
 
 #if !defined( __IOSTREAM_H )
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 #endif  // __IOSTREAM_H
 
 const int MAXKEYS = 16;

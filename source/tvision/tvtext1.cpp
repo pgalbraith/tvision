@@ -28,7 +28,7 @@
 #define Uses_TFileEditor
 #include <tvision/tv.h>
 
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 
 static unsigned getCodePage() noexcept
 {

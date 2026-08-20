@@ -29,7 +29,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __DIR_H )
-#include <dir.h>
+#include <tvision/compat/borland/dir.h>
 #endif  // __DIR_H
 
 #if !defined( __ERRNO_H )

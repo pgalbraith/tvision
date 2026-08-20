@@ -27,7 +27,7 @@
 #endif  // __STRING_H
 
 #if !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
 #define cpHistoryViewer "\x06\x06\x07\x06\x06"

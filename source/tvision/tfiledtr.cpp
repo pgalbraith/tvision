@@ -30,11 +30,11 @@
 #endif  // __STRING_H
 
 #if !defined( __FSTREAM_H )
-#include <fstream.h>
+#include <tvision/compat/borland/fstream.h>
 #endif  // __FSTREAM_H
 
 #if !defined( __IO_H )
-#include <io.h>
+#include <tvision/compat/borland/io.h>
 #endif  // __IO_H
 
 #if !defined( __STDIO_H )
@@ -42,7 +42,7 @@
 #endif  // __STDIO_H
 
 #if !defined( __STDLIB_H )
-#include <alloc.h>
+#include <tvision/compat/borland/alloc.h>
 #endif
 
 TFileEditor::TFileEditor( const TRect& bounds,

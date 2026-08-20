@@ -19,7 +19,7 @@
 
 #if !defined( __FLAT__ )
 #if !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 #endif  // __FLAT__
 

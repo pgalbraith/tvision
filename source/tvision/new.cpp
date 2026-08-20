@@ -18,12 +18,12 @@
 #include <assert.h>
 
 #if !defined( __MEM_H )
-#include <mem.h>
+#include <tvision/compat/borland/mem.h>
 #endif  // __MEM_H
 
 #if !defined( __ALLOC_H )
 
-#include <alloc.h>
+#include <tvision/compat/borland/alloc.h>
 #endif  // __ALLOC_H
 
 #if !defined( __STDLIB_H )

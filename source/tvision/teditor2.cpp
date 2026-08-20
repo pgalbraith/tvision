@@ -33,7 +33,7 @@
 #endif  // __CTYPE_H
 
 #if !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
 extern "C" {

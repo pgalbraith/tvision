@@ -24,7 +24,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __MEM_H )
-#include <mem.h>
+#include <tvision/compat/borland/mem.h>
 #endif  // __MEM_H
 
 #define cpListViewer "\x1A\x1A\x1B\x1C\x1D"

@@ -48,7 +48,7 @@ public:
     // If the character cannot be converted or 'text' is empty, returns '\0'.
     static char toCodePage(TStringView text) noexcept;
 
-#if !defined(__BORLANDC__)
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
     // Converts the code page character 'c' into UTF-8. The returned view
     // remains valid until the next call to 'setCodePageTranslation()'.
     static TStringView fromCodePage(char c) noexcept;
@@ -115,7 +115,7 @@ public:
                             TStringView text, size_t &j,
                             TColorAttr attr ) noexcept;
 
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
     // Variants of the functions above which use a '(TColorAttr &) -> void'
     // callback  to change the color attribute of each cell (rather than
     // setting it to a fixed value).
@@ -163,7 +163,7 @@ private:
 #endif // __BORLANDC__
 };
 
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
 
 inline size_t TText::width(TStringView text)
 {

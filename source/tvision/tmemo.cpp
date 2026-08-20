@@ -21,7 +21,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __IOSTREAM_H )
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 #endif  // __IOSTREAM_H
 
 #define cpMemo      "\x1A\x1B"

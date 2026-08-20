@@ -49,7 +49,7 @@ public:
 
 protected:
 
-#if !defined( __BORLANDC__ )
+#if !defined( __BORLANDC__ ) && !defined( __WATCOMC__ )
     virtual std::streamsize xsputn(const char *s, std::streamsize count);
 #endif
 

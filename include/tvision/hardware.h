@@ -50,7 +50,10 @@ public:
     ~THardwareInfo();
 
     static uint32_t getTickCount() noexcept;
-#if defined( __BORLANDC__ )
+#if defined( __BORLANDC__ ) || ( defined( __WATCOMC__ ) && !defined( __FLAT__ ) )
+    // Watcom's 32-bit targets keep the 64-bit signature (matching the real
+    // implementation they link against); only the 16-bit inline
+    // implementation below is hard-coded to uint32_t.
     static uint32_t getTickCountMs();
 #else
     static uint64_t getTickCountMs() noexcept;

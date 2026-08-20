@@ -50,7 +50,7 @@
 #endif  // __STRING_H
 
 #if !defined( __FSTREAM_H )
-#include <fstream.h>
+#include <tvision/compat/borland/fstream.h>
 #endif  // __FSTREAM_H
 
 #if !defined( __STAT_H )
@@ -318,7 +318,7 @@ ipstream::~ipstream()
 
 streampos ipstream::tellg()
 {
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     return bp->seekoff( 0, ios::cur, ios::in );
 #else
     return bp->pubseekoff( 0, ios::cur, ios::in );
@@ -328,7 +328,7 @@ streampos ipstream::tellg()
 ipstream& ipstream::seekg( streampos pos )
 {
     objs.removeAll();
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     bp->seekoff( pos, ios::beg );
 #else
     bp->pubseekoff( pos, ios::beg );
@@ -339,7 +339,7 @@ ipstream& ipstream::seekg( streampos pos )
 ipstream& ipstream::seekg( streamoff off, pstream::seekdir dir )
 {
     objs.removeAll();
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     bp->seekoff( off, ::seekdir(dir) );
 #else
     bp->pubseekoff( off, ::seekdir(dir) );
@@ -563,7 +563,7 @@ opstream::~opstream()
 opstream& opstream::seekp( streampos pos )
 {
     objs->freeAll();
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     bp->seekoff( pos, ios::beg );
 #else
     bp->pubseekoff( pos, ios::beg );
@@ -574,7 +574,7 @@ opstream& opstream::seekp( streampos pos )
 opstream& opstream::seekp( streamoff pos, pstream::seekdir dir )
 {
     objs->freeAll();
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     bp->seekoff( pos, ::seekdir(dir) );
 #else
     bp->pubseekoff( pos, ::seekdir(dir) );
@@ -584,7 +584,7 @@ opstream& opstream::seekp( streamoff pos, pstream::seekdir dir )
 
 streampos opstream::tellp()
 {
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     return bp->seekoff( 0, ios::cur, ios::out );
 #else
     return bp->pubseekoff( 0, ios::cur, ios::out );
@@ -593,7 +593,7 @@ streampos opstream::tellp()
 
 opstream& opstream::flush()
 {
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
     bp->sync();
 #else
     bp->pubsync();

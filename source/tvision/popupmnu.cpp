@@ -58,7 +58,7 @@ ushort popupMenu(TPoint where, TMenuItem &aMenu, TGroup *receiver)
         // Generate an event.
         if (res && receiver)
         {
-            TEvent event = {};
+            TEvent event = {0};
             event.what = evCommand;
             event.message.command = res;
             receiver->putEvent(event);

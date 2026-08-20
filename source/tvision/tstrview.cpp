@@ -7,7 +7,7 @@
 
 #include <tvision/tv.h>
 
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 
 ostream _FAR & _Cdecl operator<<(ostream _FAR &os, TStringView s)
 {

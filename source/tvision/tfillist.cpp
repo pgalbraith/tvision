@@ -23,7 +23,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __DIR_H )
-#include <dir.h>
+#include <tvision/compat/borland/dir.h>
 #endif  // __DIR_H
 
 #if !defined( __ERRNO_H )
@@ -43,7 +43,7 @@
 #endif  // __ASSERT_H
 
 #if !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
 #if !defined( __STRING_H )

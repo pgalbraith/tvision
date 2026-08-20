@@ -28,11 +28,11 @@
 #include <tvision/tv.h>
 
 #if !defined( __IOSTREAM_H )
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 #endif  // __IOSTREAM_H
 
 #if !defined( __IOMANIP_H )
-#include <iomanip.h>
+#include <tvision/compat/borland/iomanip.h>
 #endif  // __IOMANIP_H
 
 #if !defined( __STDDEF_H )

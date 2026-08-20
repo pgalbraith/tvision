@@ -18,7 +18,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __FLAT__ ) && !defined( __DOS_H )
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
 ushort _NEAR TScreen::startupMode = 0xFFFF;

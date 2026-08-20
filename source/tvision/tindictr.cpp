@@ -21,7 +21,7 @@
 #include <tvision/tv.h>
 
 #if !defined( __STRSTREA_H )
-#include <strstrea.h>
+#include <tvision/compat/borland/strstrea.h>
 #endif  // __STRSTREA_H
 
 #define cpIndicator "\x02\x03"

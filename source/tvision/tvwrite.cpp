@@ -60,7 +60,7 @@ struct TVWrite {
 
     static TColorAttr applyShadow(TColorAttr attr) noexcept
     {
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__) || defined(__WATCOMC__)
         // Because we can't know if the cell has already been shadowed,
         // we compare against the shadow attributes. This may yield some false positives.
         TColorAttr shadowAttrInv = (shadowAttr << 4) | (shadowAttr >> 4);
@@ -92,7 +92,7 @@ void TView::writeView( short x, short y, short count, const void _FAR* b ) noexc
     TVWrite().L0(this, x, y, count, b);
 }
 
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
 void TView::writeView( short x, short y, short count, const TScreenCell* b ) noexcept
 {
     TVWrite(false).L0(this, x, y, count, b);
@@ -236,12 +236,12 @@ void TVWrite::L50( TGroup *owner ) noexcept
     TScreenCell *dst = &owner->buffer[Y*owner->size.x + X];
     if (bufIsShort)
     {
-        auto *src = &((const ushort *) Buffer)[X - wOffset];
+        const ushort *src = &((const ushort *) Buffer)[X - wOffset];
         copyShort2Cell(dst, src);
     }
     else
     {
-        auto *src = &((const TScreenCell *) Buffer)[X - wOffset];
+        const TScreenCell *src = &((const TScreenCell *) Buffer)[X - wOffset];
         copyCell(dst, src);
     }
     if (owner->buffer == TScreen::screenBuffer)
@@ -297,7 +297,7 @@ void TVWrite::copyCell(TScreenCell *dst, const TScreenCell *src) noexcept
     else
         for (i = 0; i < Count - X; ++i)
         {
-            auto c = src[i];
+            TScreenCell c = src[i];
             c.attribute = applyShadow(c.attribute);
             dst[i] = c;
         }
@@ -310,13 +310,14 @@ void TVWrite::copyShort2Cell( TScreenCell *dst, const ushort *src ) noexcept
         // Expand character/attribute pair
         for (i = 0; i < Count - X; ++i)
         {
-            dst[i] = TScreenCell {src[i]};
+            dst[i] = src[i];
         }
     else
         // Mix in shadow attribute
         for (i = 0; i < Count - X; ++i)
         {
-            TScreenCell c {src[i]};
+            TScreenCell c;
+            c = src[i];
             c.attribute = applyShadow(c.attribute);
             dst[i] = c;
         }
@@ -363,7 +364,7 @@ void TView::writeLine( short x, short y, short w, short h, const void _FAR *b ) 
     }
 }
 
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
 void TView::writeLine( short x, short y, short w, short h, const TScreenCell *b ) noexcept
 {
     while (h-- > 0)

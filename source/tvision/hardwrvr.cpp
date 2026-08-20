@@ -19,8 +19,8 @@
 #define Uses_THardwareInfo
 #define Uses_TSystemError
 #include <tvision/tv.h>
-#include <dos.h>
-#include <iostream.h>
+#include <tvision/compat/borland/dos.h>
+#include <tvision/compat/borland/iostream.h>
 
 #if defined( __FLAT__ )
 

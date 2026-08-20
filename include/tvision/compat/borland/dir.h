@@ -20,7 +20,7 @@
 #ifndef TVISION_COMPAT_DIR_H
 #define TVISION_COMPAT_DIR_H
 
-#ifdef _WIN32
+#if defined( _WIN32 ) || defined( __WATCOMC__ )
 #include <direct.h>
 #else
 #include <unistd.h>

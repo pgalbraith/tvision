@@ -21,7 +21,7 @@
 #define Uses_TDeskTop
 #include <tvision/tv.h>
 
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 #include <stdlib.h>
 #include <signal.h>
 
@@ -82,7 +82,7 @@ void TApplication::dosShell()
 {
     suspend();
     writeShellMsg();
-#if defined( __BORLANDC__ ) || defined( _WIN32 )
+#if defined( __BORLANDC__ ) || defined( __WATCOMC__ ) || defined( _WIN32 )
     system( getenv( "COMSPEC" ) );
 #else
     raise( SIGTSTP );

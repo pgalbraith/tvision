@@ -14,8 +14,8 @@
 #define Uses_TKeys
 #include <tvision/tv.h>
 
-#include <iostream.h>
-#include <iomanip.h>
+#include <tvision/compat/borland/iostream.h>
+#include <tvision/compat/borland/iomanip.h>
 
 #ifdef __BORLANDC__
 typedef long fmtflags;

@@ -50,7 +50,7 @@
 #endif  // __CTYPE_H
 
 #if !defined( __IOSTREAM_H )
-#include <iostream.h>
+#include <tvision/compat/borland/iostream.h>
 #endif  // __IOSTREAM_H
 
 #pragma warn -dsz
