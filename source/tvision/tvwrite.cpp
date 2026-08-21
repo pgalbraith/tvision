@@ -92,7 +92,7 @@ void TView::writeView( short x, short y, short count, const void _FAR* b ) noexc
     TVWrite().L0(this, x, y, count, b);
 }
 
-#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
+#ifndef __BORLANDC__
 void TView::writeView( short x, short y, short count, const TScreenCell* b ) noexcept
 {
     TVWrite(false).L0(this, x, y, count, b);
@@ -364,7 +364,7 @@ void TView::writeLine( short x, short y, short w, short h, const void _FAR *b ) 
     }
 }
 
-#if !defined(__BORLANDC__) && !defined(__WATCOMC__)
+#ifndef __BORLANDC__
 void TView::writeLine( short x, short y, short w, short h, const TScreenCell *b ) noexcept
 {
     while (h-- > 0)

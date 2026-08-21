@@ -24,21 +24,26 @@ struct TScreenCell
     operator ushort() const;
 };
 
+// Note the pointer (rather than reference) casts: a C-style reference cast
+// like '(ushort &) *this' makes Open Watcom resolve the conversion through
+// operator ushort() itself, compiling these operators into infinite
+// recursion. Pointer casts cannot invoke user-defined conversions.
+
 inline TScreenCell& TScreenCell::operator=(const TScreenCell &other)
 {
-    (ushort &) *this = (const ushort &) other;
+    *(ushort *) this = *(const ushort *) &other;
     return *this;
 }
 
 inline TScreenCell& TScreenCell::operator=(ushort value)
 {
-    (ushort &) *this = value;
+    *(ushort *) this = value;
     return *this;
 }
 
 inline TScreenCell::operator ushort() const
 {
-    return (const ushort &) *this;
+    return *(const ushort *) this;
 }
 
 #else
