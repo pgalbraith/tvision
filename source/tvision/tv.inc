@@ -13,8 +13,12 @@
 
 ifdef __FLAT__ ;;;;;;;;;;;;;;;;;;;;;;;; 32-bit ;;;;;;;;;;;;;;;;;;;;;;;
 
+ifdef __WASM__
+    .MODEL FLAT, C
+else
     P386
     MODEL  FLAT, C
+endif
 
         ARGINT   equ DWORD
     Dnear    equ DD
@@ -27,7 +31,14 @@ ifdef __FLAT__ ;;;;;;;;;;;;;;;;;;;;;;;; 32-bit ;;;;;;;;;;;;;;;;;;;;;;;
 
 else    ;;;;;;;;;;;;;;;;;;;;;;;; 16-bit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+ifdef __WASM__
+    ; Open Watcom's assembler doesn't support TASM's PROLOG auto-generation
+    ; extension, so procedures in the 16-bit .asm files spell out their own
+    ; prologue/epilogue explicitly under __WASM__ (see USES/RET usage below).
+    .MODEL LARGE, C
+else
     MODEL  LARGE, PROLOG
+endif
 
     ARGINT equ WORD
     Dnear  equ DW
@@ -36,5 +47,8 @@ else    ;;;;;;;;;;;;;;;;;;;;;;;; 16-bit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     INCLUDE TVWRITE.INC
 
 endif
+; WASM treats '@@' labels as scoped/local automatically; TASM needs LOCALS.
+ifndef __WASM__
     LOCALS @@
+endif
 

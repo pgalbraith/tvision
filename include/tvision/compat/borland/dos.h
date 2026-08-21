@@ -32,6 +32,14 @@
 #define TVISION_COMPAT_DOS_INCNEXT
 #include <dos.h>
 #undef TVISION_COMPAT_DOS_INCNEXT
+#elif defined(__WATCOMC__)
+// Safe to include bare, unlike the MinGW case above: this directory isn't
+// on the general include search path, so this resolves to Watcom's own
+// <dos.h> (providing _dos_findfirst, _dos_getvect, _chain_intr, etc.)
+// rather than back to this file. The FA_*/ffblk definitions below are
+// still provided on top of it, since Watcom only has the _A_*/find_t
+// spellings.
+#include <dos.h>
 #endif
 
 #include <errno.h>
@@ -67,6 +75,7 @@ struct  ffblk   {
 };
 #endif  /* __FFBLK_DEF */
 
+#if !defined(__WATCOMC__) // Watcom's own <dos.h> already provides these.
 /* The MSC find_t structure corresponds exactly to the ffblk structure */
 struct  find_t {
     int32_t         reserved;
@@ -81,6 +90,7 @@ struct  find_t {
 
 unsigned _dos_findfirst( const char * __path, unsigned __attrib, struct find_t *__finfo ) noexcept;
 unsigned _dos_findnext( struct find_t *__finfo ) noexcept;
+#endif
 
 #endif // TVISION_COMPAT_DOS_H
 

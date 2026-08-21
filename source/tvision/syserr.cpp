@@ -39,28 +39,47 @@ Boolean _NEAR TSystemError::ctrlBreakHit = False;
 Boolean _NEAR TSystemError::saveCtrlBreak = False;
 
 #if !defined( __FLAT__ )
+#if defined( __WATCOMC__ )
+// The declaration in system.h has no _NEAR on this member; Borland
+// tolerated the mismatch below but Watcom rejects it.
+short ( _FAR * TSystemError::sysErrorFunc )(short,uchar) = &TSystemError::sysErr;
+#else
 short ( _FAR * _NEAR TSystemError::sysErrorFunc )(short,uchar) = &TSystemError::sysErr;
+#endif
 ushort _NEAR TSystemError::sysColorAttr = 0x4E4F;
 ushort _NEAR TSystemError::sysMonoAttr = 0x7070;
 Boolean _NEAR TSystemError::sysErrActive = False;
 Boolean _NEAR TSystemError::inIDE = False;
 
 TPMRegs TSystemError::Int24Regs;
+#if defined( __WATCOMC__ )
+void (__interrupt far *TSystemError::Int24RMThunk)();
+void (__interrupt far *TSystemError::Int24RMCallback)();
+#else
 void (interrupt far *TSystemError::Int24RMThunk)();
 void (interrupt far *TSystemError::Int24RMCallback)();
+#endif
 unsigned TSystemError::Int24RMThunkSel;
 
-const SecretWord = 1495;
-const productID  =  136;
+const int SecretWord = 1495;
+const int productID  =  136;
 
 static void checkIDE()
 {
     Int11trap trap;
 
+#if defined( __WATCOMC__ )
+    // Watcom has no _AX/_BX pseudo-registers or _genInt(); use int86().
+    union REGS r;
+    r.x.ax = SecretWord;
+    r.x.bx = SecretWord;
+    int86( 0x12, &r, &r );
+#else
     _BX = SecretWord;
     _AX = SecretWord;
 
     _genInt(0x12);
+#endif
 }
 #endif
 
@@ -94,6 +113,21 @@ void TSystemError::resume() noexcept
 void TSystemError::suspend() noexcept
 {
     THardwareInfo::setCtrlBrkHandler( FALSE );
+}
+#endif
+
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// The assembly implementation in SWAPST.ASM takes plain arguments through
+// an extern "C" interface instead of referencing TScreen's statics through
+// a compiler-specific name mangling scheme the way the Borland build does.
+extern "C" void __cdecl tvSwapStatusLine( void _FAR *bufData,
+                                          void _FAR *scrBuf,
+                                          unsigned width, unsigned height );
+
+void TSystemError::swapStatusLine( TDrawBuffer _FAR &b )
+{
+    tvSwapStatusLine( b.data, TScreen::screenBuffer,
+                      TScreen::screenWidth, TScreen::screenHeight );
 }
 #endif
 
@@ -151,6 +185,30 @@ short TSystemError::sysErr( short errorCode, uchar drive )
 }
 
 
+#if defined( __WATCOMC__ )
+
+Int11trap::Int11trap()
+{
+    oldHandler = _dos_getvect( 0x11 );
+    _dos_setvect( 0x11, (void (__interrupt far *)()) &Int11trap::handler );
+}
+
+Int11trap::~Int11trap()
+{
+    _dos_setvect( 0x11, oldHandler );
+}
+
+void (__interrupt far * _NEAR Int11trap::oldHandler)() = 0;
+
+void __interrupt far Int11trap::handler( union INTPACK r )
+{
+    if( r.x.ax == SecretWord && r.x.bx == productID )
+        TSystemError::inIDE = True;
+    _chain_intr( oldHandler );
+}
+
+#else
+
 Int11trap::Int11trap()
 {
     oldHandler = getvect( 0x11 );
@@ -170,5 +228,7 @@ void interrupt Int11trap::handler(...)
         TSystemError::inIDE = True;
     oldHandler();
 }
+
+#endif // __WATCOMC__
 
 #endif

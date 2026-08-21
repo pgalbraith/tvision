@@ -15,12 +15,74 @@
 
 #ifdef __BORLANDC__
 #include <dir.h>
+#elif defined( __WATCOMC__ )
+
+#ifndef TVISION_COMPAT_DIR_H
+#define TVISION_COMPAT_DIR_H
+
+// Implemented on top of Watcom's own DOS RTL. The trivial functions are
+// inline wrappers here; fnsplit/fnmerge/getcurdir are in wcdir.cpp.
+
+#include <direct.h>
+#include <dos.h>
+
+#define WILDCARDS 0x01
+#define EXTENSION 0x02
+#define FILENAME  0x04
+#define DIRECTORY 0x08
+#define DRIVE     0x10
+
+#define MAXDRIVE  3
+#define MAXPATH   80
+#define MAXDIR    66
+#define MAXFILE   9
+#define MAXEXT    5
+
+#ifndef _FFBLK_DEF
+#define _FFBLK_DEF
+// Same memory layout as Watcom's find_t, with Borland's field names.
+struct  ffblk   {
+    char            ff_reserved[21];
+    char            ff_attrib;
+    unsigned short  ff_ftime;
+    unsigned short  ff_fdate;
+    unsigned long   ff_fsize;
+    char            ff_name[13];
+};
+#endif
+
+inline int findfirst( const char *__path, struct ffblk *__ffblk, int __attrib )
+    { return _dos_findfirst( __path, __attrib, (struct find_t *) __ffblk ) == 0 ? 0 : -1; }
+
+inline int findnext( struct ffblk *__ffblk )
+    { return _dos_findnext( (struct find_t *) __ffblk ) == 0 ? 0 : -1; }
+
+inline int getdisk( void )
+    { unsigned __d; _dos_getdrive( &__d ); return (int) __d - 1; }
+
+inline int setdisk( int __drive )
+    { unsigned __t; _dos_setdrive( __drive + 1, &__t ); return (int) __t; }
+
+void fnmerge( char *__path,
+              const char *__drive,
+              const char *__dir,
+              const char *__name,
+              const char *__ext );
+int fnsplit( const char *__path,
+             char *__drive,
+             char *__dir,
+             char *__name,
+             char *__ext );
+int getcurdir( int __drive, char *__directory );
+
+#endif // TVISION_COMPAT_DIR_H
+
 #else
 
 #ifndef TVISION_COMPAT_DIR_H
 #define TVISION_COMPAT_DIR_H
 
-#if defined( _WIN32 ) || defined( __WATCOMC__ )
+#ifdef _WIN32
 #include <direct.h>
 #else
 #include <unistd.h>

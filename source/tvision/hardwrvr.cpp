@@ -95,10 +95,22 @@ const ushort THardwareInfo::AltCvt[89] = {
 
 #else
 
+#if defined( __WATCOMC__ )
+// Defined as extern "C" globals so HARDWARE.ASM can reference them without
+// depending on a C++ name mangling scheme. hardware.h maps the class's
+// member names onto these.
+extern "C" {
+uchar tvDpmiFlag;
+ushort tvColorSel;
+ushort tvMonoSel;
+ushort tvBiosSel;
+}
+#else
 Boolean THardwareInfo::dpmiFlag;
 ushort THardwareInfo::colorSel;
 ushort THardwareInfo::monoSel;
 ushort THardwareInfo::biosSel;
+#endif
 
 #endif
 

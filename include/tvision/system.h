@@ -21,6 +21,10 @@
 #pragma option -po-
 #endif
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+#include <i86.h>    // union INTPACK, int86(), _chain_intr().
+#endif
+
 #if !defined( __EVENT_CODES )
 #define __EVENT_CODES
 
@@ -335,7 +339,8 @@ inline void TEvent::getMouseEvent() noexcept
 #if defined( Uses_TTimerQueue ) && !defined( __TTimerQueue )
 #define __TTimerQueue
 
-#ifdef __BORLANDC__
+#if defined( __BORLANDC__ ) || ( defined( __WATCOMC__ ) && !defined( __FLAT__ ) )
+// Matches the return type of THardwareInfo::getTickCountMs (see hardware.h).
 typedef uint32_t TTimePoint;
 #else
 typedef uint64_t TTimePoint;
@@ -519,13 +524,22 @@ private:
 
     static Boolean _NEAR inIDE;
 
+#if defined( __WATCOMC__ )
+    static void __interrupt Int24PMThunk();
+#else
     static void interrupt Int24PMThunk();
+#endif
     static void setupDPMI();
     static void shutdownDPMI();
 
     static TPMRegs Int24Regs;
+#if defined( __WATCOMC__ )
+    static void (__interrupt far *Int24RMThunk)();
+    static void (__interrupt far *Int24RMCallback)();
+#else
     static void (interrupt far *Int24RMThunk)();
     static void (interrupt far *Int24RMCallback)();
+#endif
     static unsigned Int24RMThunkSel;
 
     friend class Int11trap;
@@ -544,8 +558,16 @@ public:
 
 private:
 
+#if defined( __WATCOMC__ )
+    // Watcom interrupt handlers receive the interrupted context's registers
+    // through an INTPACK parameter instead of Borland's _AX/_BX
+    // pseudo-registers, so the signatures differ.
+    static void __interrupt far handler( union INTPACK );
+    static void (__interrupt far * _NEAR oldHandler)();
+#else
     static void interrupt handler(...);
     static void interrupt (_FAR * _NEAR oldHandler)(...);
+#endif
 
 };
 #endif

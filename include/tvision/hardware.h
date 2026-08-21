@@ -155,14 +155,46 @@ private:
 
     static ushort huge getBiosSelector();   // For SYSINT.ASM.
 
+#if !defined( __WATCOMC__ )
     static Boolean dpmiFlag;
     static ushort colorSel;
     static ushort monoSel;
     static ushort biosSel;
+#endif
 
 #endif
 
 };
+
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// Under Watcom, the 16-bit assembly routines in HARDWARE.ASM cannot use
+// Borland's mangled C++ names, so the shared state and entry points are
+// plain extern "C" symbols instead of THardwareInfo static members.
+// __cdecl matches the stack-based argument passing and '_name' symbol
+// decoration produced by WASM's '.MODEL <model>, C' language type (Watcom's
+// default calling convention would pass arguments in registers and decorate
+// as 'name_' instead).
+extern "C" {
+    void __cdecl tvHWInfoCtor( void );
+    void __cdecl tvHWInfoDtor( void );
+    ushort __cdecl tvGetBiosEquipmentFlag( void );
+    ushort __cdecl tvGetBiosSelector( void );
+    extern uchar tvDpmiFlag;
+    extern ushort tvColorSel;
+    extern ushort tvMonoSel;
+    extern ushort tvBiosSel;
+}
+// These selector names are remapped only around this header's own inline
+// method bodies (see below) and #undef'd again before the header ends,
+// because e.g. 'monoSel' is also a TColorDialog member name in colorsel.h.
+#define dpmiFlag tvDpmiFlag
+#define colorSel tvColorSel
+#define monoSel  tvMonoSel
+#define biosSel  tvBiosSel
+
+inline THardwareInfo::THardwareInfo() noexcept { tvHWInfoCtor(); }
+inline THardwareInfo::~THardwareInfo() { tvHWInfoDtor(); }
+#endif
 
 #if defined( __FLAT__ )
 
@@ -316,7 +348,14 @@ inline void THardwareInfo::setBiosEquipmentFlag( ushort flag )
     { *(ushort *) MAKELONG( biosSel, 0x10 ) = flag; }
 
 inline Boolean THardwareInfo::getDPMIFlag()
-    { return dpmiFlag; }
+    { return Boolean( dpmiFlag ); }
+
+#if defined( __WATCOMC__ )
+#undef dpmiFlag
+#undef colorSel
+#undef monoSel
+#undef biosSel
+#endif
 
 #endif
 
