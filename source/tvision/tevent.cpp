@@ -15,6 +15,13 @@
 #pragma inline
 #endif
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// Watcom spells the interrupt-flag intrinsics _disable/_enable (see i86.h,
+// included via system.h).
+#define disable _disable
+#define enable  _enable
+#endif
+
 #define Uses_TKeys
 #define Uses_TEvent
 #define Uses_TScreen
@@ -84,6 +91,8 @@ void TEventQueue::resume() noexcept
 
 #if defined( __FLAT__ )
     THardwareInfo::clearPendingEvent();
+#elif defined( __WATCOMC__ )
+    TMouse::registerHandler( 0xFFFF, (void (_FAR *)()) tvMouseIntStub );
 #else
     TMouse::registerHandler( 0xFFFF, (void (_FAR *)()) mouseInt );
 #endif
@@ -249,7 +258,40 @@ Boolean TEventQueue::getMouseState( TEvent & ev ) noexcept
 }
 
 
-#if !defined( __FLAT__ )
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+
+// Called by tvMouseIntStub (WCSTUBS.ASM), which is what the mouse driver
+// actually invokes: the stub saves all registers, loads DS with DGROUP and
+// passes the driver's register values on as plain arguments, replacing the
+// pseudo-register accesses of the Borland version below.
+extern "C" void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
+                                        unsigned x, unsigned y )
+{
+    MouseEventType tempMouse;
+
+    tempMouse.buttons = buttons & 0xFF;
+    uchar wheel = buttons >> 8;
+    tempMouse.wheel = wheel == 0 ? 0 : char(wheel) > 0 ? mwDown : mwUp; // CuteMouse
+    tempMouse.eventFlags = 0;
+    tempMouse.where.x = x >> 3;
+    tempMouse.where.y = y >> 3;
+    tempMouse.controlKeyState = THardwareInfo::getShiftState();
+
+    if( (flag & 0x1e) != 0 &&
+        TEventQueue::eventCount < eventQSize )
+        {
+        TEventQueue::eventQTail->what = THardwareInfo::getTickCount();
+        TEventQueue::eventQTail->mouse = TEventQueue::curMouse;
+        if( ++TEventQueue::eventQTail >= TEventQueue::eventQueue + eventQSize )
+            TEventQueue::eventQTail = TEventQueue::eventQueue;
+        TEventQueue::eventCount++;
+        }
+
+    TEventQueue::curMouse = tempMouse;
+    TEventQueue::mouseIntFlag = True;
+}
+
+#elif !defined( __FLAT__ )
 #pragma saveregs
 void __MOUSEHUGE TEventQueue::mouseInt()
 {
@@ -411,6 +453,15 @@ Boolean TEventQueue::readKeyPress( TEvent &ev ) noexcept
 #if defined( __FLAT__ )
     if( !THardwareInfo::getKeyEvent( ev ) )
         ev.what = evNothing;
+#elif defined( __WATCOMC__ )
+    if( _bios_keybrd( _KEYBRD_READY ) == 0 )
+        {
+        ev.what = evNothing;
+        return False;
+        }
+    ev.what = evKeyDown;
+    ev.keyDown.keyCode = _bios_keybrd( _KEYBRD_READ );
+    ev.keyDown.controlKeyState = THardwareInfo::getShiftState();
 #else
 
 I   MOV AH,1;
@@ -430,7 +481,7 @@ I   INT 16h;
     ev.keyDown.keyCode = _AX;
     ev.keyDown.controlKeyState = THardwareInfo::getShiftState();
 #endif
-#if defined( __BORLANDC__ )
+#if defined( __BORLANDC__ ) || defined( __WATCOMC__ )
     if( ev.what == evKeyDown )
         {
         if( ' ' <= ev.keyDown.charScan.charCode &&

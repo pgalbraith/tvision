@@ -116,7 +116,7 @@ ushort defEditorDialog( int, ... );
 
 ushort scanKeyMap( const void *keyMap, ushort keyCode )
 {
-#if !defined(__FLAT__)
+#if !defined(__FLAT__) && !defined(__WATCOMC__)
 asm {
     PUSH DS
     LDS SI,keyMap

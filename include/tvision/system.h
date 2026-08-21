@@ -261,6 +261,14 @@ struct TEvent
 #if defined( Uses_TEventQueue ) && !defined( __TEventQueue )
 #define __TEventQueue
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+extern "C" {
+    void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
+                                 unsigned x, unsigned y );
+    void far tvMouseIntStub();
+}
+#endif
+
 class TEventQueue
 {
 public:
@@ -290,12 +298,19 @@ private:
     static Boolean readKeyPress( TEvent& ) noexcept;
 
 #if !defined( __FLAT__ )
+#if defined( __WATCOMC__ )
+    // The mouse callback body; invoked by the register-saving assembly stub
+    // tvMouseIntStub in WCSTUBS.ASM. See tevent.cpp.
+    friend void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
+                                        unsigned x, unsigned y );
+#else
 #if !defined( __DPMI16__ )
 #define __MOUSEHUGE huge
 #else
 #define __MOUSEHUGE
 #endif
     static void __MOUSEHUGE mouseInt();
+#endif
 #endif
 
     static MouseEventType _NEAR lastMouse;

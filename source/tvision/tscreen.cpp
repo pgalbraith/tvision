@@ -36,6 +36,34 @@ ushort TDisplay::getCursorType() noexcept
 {
 #if defined( __FLAT__ )
     return THardwareInfo::getCaretSize();
+#elif defined( __WATCOMC__ )
+    uchar start, end, base = 8;
+    ushort result;
+    union REGS r;
+
+    r.h.ah = 3;
+    r.h.bh = 0;
+    int86( 0x10, &r, &r );
+
+    start = r.h.ch;
+    end = r.h.cl;
+
+    if( r.w.cx == 0x2000 )
+        return 0;
+
+    if( isEGAorVGA() )
+    {
+        r.w.ax = 0x1130;
+        r.h.bl = 0;
+        int86( 0x10, &r, &r );
+        base = r.h.cl;
+    }
+
+    start = (ushort) start * 100 / base;
+    end = (ushort) end * 100 / base;
+
+    result = (start << 8) + end;
+    return result;
 #else
     uchar start, end, base = 8;
     ushort result;
@@ -69,10 +97,18 @@ ushort TDisplay::getCursorType() noexcept
 #if !defined( __FLAT__ )
 int TDisplay::isEGAorVGA(void)
 {
+#if defined( __WATCOMC__ )
+    union REGS r;
+    r.h.bl = 0x10;
+    r.h.ah = 0x12;
+    int86( 0x10, &r, &r );
+    return r.h.bl != 0x10;
+#else
     _BL=0x10;
     _AH=0x12;
     videoInt();
     return _BL != 0x10;
+#endif
 }
 #endif
 
@@ -80,6 +116,33 @@ void TDisplay::setCursorType( ushort ct ) noexcept
 {
 #if defined( __FLAT__ )
     THardwareInfo::setCaretSize( ct & 0xFF );
+#elif defined( __WATCOMC__ )
+    uchar start, end, base = 8;
+    union REGS r;
+
+    if( ct == 0 )
+        r.w.cx = 0x2000;
+    else
+        {
+        start = ct >> 8;
+        end = ct & 0xFF;
+
+        if( isEGAorVGA() )
+            {
+            r.w.ax = 0x1130;
+            r.h.bl = 0;
+            int86( 0x10, &r, &r );
+            base = r.h.cl;
+            }
+
+        start = ((ushort) start * base + 50) / 100;
+        end = ((ushort) end * base + 50) / 100;
+
+        r.h.ch = start;
+        r.h.cl = end;
+        }
+    r.h.ah = 1;
+    int86( 0x10, &r, &r );
 #else
     uchar start, end, base = 8;
 
@@ -113,6 +176,14 @@ void TDisplay::clearScreen( uchar w, uchar h ) noexcept
 {
 #if defined( __FLAT__ )
     THardwareInfo::clearScreen( w, h );
+#elif defined( __WATCOMC__ )
+    union REGS r;
+    r.h.bh = 0x07;
+    r.w.cx = 0;
+    r.h.dl = w;
+    r.h.dh = h - 1;
+    r.w.ax = 0x0600;
+    int86( 0x10, &r, &r );
 #else
     _BH = 0x07;
     _CX = 0;
@@ -125,7 +196,7 @@ void TDisplay::clearScreen( uchar w, uchar h ) noexcept
 
 #pragma warn -asc
 
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
 void TDisplay::videoInt()
 {
 
@@ -144,6 +215,15 @@ ushort TDisplay::getRows() noexcept
 {
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenRows();
+#elif defined( __WATCOMC__ )
+    union REGS r;
+    r.w.ax = 0x1130;
+    r.h.bh = 0;
+    r.h.dl = 0;
+    int86( 0x10, &r, &r );
+    if( r.h.dl == 0 )
+        r.h.dl = 24;
+    return r.h.dl + 1;
 #else
     _AX = 0x1130;
     _BH = 0;
@@ -159,6 +239,11 @@ ushort TDisplay::getCols() noexcept
 {
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenCols();
+#elif defined( __WATCOMC__ )
+    union REGS r;
+    r.h.ah = 0x0F;
+    int86( 0x10, &r, &r );
+    return r.h.ah;
 #else
     _AH = 0x0F;
     videoInt();
@@ -170,6 +255,14 @@ ushort TDisplay::getCrtMode() noexcept
 {
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenMode();
+#elif defined( __WATCOMC__ )
+    union REGS r;
+    r.h.ah = 0x0F;
+    int86( 0x10, &r, &r );
+    ushort mode = r.h.al;
+    if( getRows() > 25 )
+        mode |= smFont8x8;
+    return mode;
 #else
     _AH = 0x0F;
     videoInt();
@@ -185,6 +278,36 @@ void TDisplay::setCrtMode( ushort mode ) noexcept
 {
 #if defined( __FLAT__ )
     THardwareInfo::setScreenMode( mode );
+#elif defined( __WATCOMC__ )
+    ushort eflag = THardwareInfo::getBiosEquipmentFlag() & 0xFFCF;
+    eflag |= (mode == smMono) ? 0x30 : 0x20;
+    THardwareInfo::setBiosEquipmentFlag( eflag );
+    THardwareInfo::setBiosVideoInfo( THardwareInfo::getBiosVideoInfo() & 0x00FE );
+
+    union REGS r;
+    r.h.ah = 0;
+    r.h.al = mode;
+    int86( 0x10, &r, &r );
+
+    if( (mode & smFont8x8) != 0 )
+        {
+        r.w.ax = 0x1112;
+        r.h.bl = 0;
+        int86( 0x10, &r, &r );
+
+        if( getRows() > 25 )
+            {
+            THardwareInfo::setBiosVideoInfo( THardwareInfo::getBiosVideoInfo() | 1 );
+
+            r.h.ah = 1;
+            r.w.cx = 0x0607;
+            int86( 0x10, &r, &r );
+
+            r.h.ah = 0x12;
+            r.h.bl = 0x20;
+            int86( 0x10, &r, &r );
+            }
+        }
 #else
     ushort eflag = THardwareInfo::getBiosEquipmentFlag() & 0xFFCF;
     eflag |= (mode == smMono) ? 0x30 : 0x20;

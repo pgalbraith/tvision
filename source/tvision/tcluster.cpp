@@ -397,7 +397,7 @@ int TCluster::row( int item )
 
 Boolean TCluster::buttonState(int item)
 {
-#if !defined(__FLAT__)
+#if !defined(__FLAT__) && !defined(__WATCOMC__)
     ushort maskLo = enableMask & 0xffff;
     ushort maskHi = enableMask >> 16;
 

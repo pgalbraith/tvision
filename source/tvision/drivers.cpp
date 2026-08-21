@@ -89,7 +89,7 @@ void TDrawBuffer::moveChar( ushort indent, char c, TColorAttr attr, ushort count
     // * indent + count <= capacity
     // * count > 0
 
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
     _ES = FP_SEG( &data[indent] );
     _DI = FP_OFF( &data[indent] );
 
@@ -178,7 +178,7 @@ ushort TDrawBuffer::moveCStr( ushort indent, TStringView str, TAttrPair attrs,
     // * maxStrWidth > 0
     // * str.size() > 0
 
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
     // Compute the end pointer here since doing it later would overwrite
     // registers already in use.
     TScreenCell _FAR * dataEnd = &data[indent + maxStrWidth];
@@ -318,7 +318,7 @@ ushort TDrawBuffer::moveStr( ushort indent, TStringView str, TColorAttr attr,
     // * indent + maxStrWidth <= capacity
     // * maxStrWidth > 0
 
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
     if (strIndent >= str.size())
         return 0;
     // * count > 0
