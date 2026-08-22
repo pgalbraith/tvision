@@ -40,7 +40,11 @@
 
 #ifndef _FFBLK_DEF
 #define _FFBLK_DEF
-// Same memory layout as Watcom's find_t, with Borland's field names.
+// Borland's layout, which is also the DOS DTA's. Watcom's find_t is not
+// interchangeable with it: <dos.h> declares find_t under '#pragma pack(1)'
+// while this struct takes the target's normal alignment, and find_t's name
+// field is NAME_MAX+1 bytes - 260 on the Win32 target, not 13. So
+// findfirst/findnext (wcdir.cpp) copy between the two rather than casting.
 struct  ffblk   {
     char            ff_reserved[21];
     char            ff_attrib;
@@ -51,11 +55,8 @@ struct  ffblk   {
 };
 #endif
 
-inline int findfirst( const char *__path, struct ffblk *__ffblk, int __attrib )
-    { return _dos_findfirst( __path, __attrib, (struct find_t *) __ffblk ) == 0 ? 0 : -1; }
-
-inline int findnext( struct ffblk *__ffblk )
-    { return _dos_findnext( (struct find_t *) __ffblk ) == 0 ? 0 : -1; }
+int findfirst( const char *__path, struct ffblk *__ffblk, int __attrib );
+int findnext( struct ffblk *__ffblk );
 
 inline int getdisk( void )
     { unsigned __d; _dos_getdrive( &__d ); return (int) __d - 1; }

@@ -42,6 +42,13 @@ int TTextDevice::overflow( int c )
     return 1;
 }
 
+#if defined( __WATCOMC__ )
+int TTextDevice::underflow()
+{
+    return EOF;
+}
+#endif
+
 #if !defined( __BORLANDC__ ) && !defined( __WATCOMC__ )
 // The 'xsputn' method in modern STL is the equivalent of 'do_sputn' in
 // Borland's RTL. We must invoke 'do_sputn' here in order to replicate

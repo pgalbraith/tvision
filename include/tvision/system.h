@@ -265,7 +265,9 @@ struct TEvent
 extern "C" {
     void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
                                  unsigned x, unsigned y );
-    void far tvMouseIntStub();
+    // __cdecl only for the '_name' decoration WASM's '.MODEL <model>, C'
+    // produces; the mouse driver calls this, not C++.
+    void __cdecl far tvMouseIntStub();
 }
 #endif
 
@@ -284,6 +286,11 @@ public:
 
     friend class TView;
     friend void genRefs();
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+    // TVWrite (TVWRITE.CPP) consults curMouse and mouseIntFlag while writing
+    // to video memory, as TVWRITE.ASM did.
+    friend struct TVWrite;
+#endif
 
     static ushort _NEAR doubleDelay;
     static Boolean _NEAR mouseReverse;
@@ -539,23 +546,18 @@ private:
 
     static Boolean _NEAR inIDE;
 
-#if defined( __WATCOMC__ )
-    static void __interrupt Int24PMThunk();
-#else
+#if !defined( __WATCOMC__ )
+    // Real mode is the only 16-bit DOS target Open Watcom has, so the
+    // DPMI16 support below (SYSINT.ASM) has no counterpart in WCSYSINT.CPP.
     static void interrupt Int24PMThunk();
-#endif
     static void setupDPMI();
     static void shutdownDPMI();
 
     static TPMRegs Int24Regs;
-#if defined( __WATCOMC__ )
-    static void (__interrupt far *Int24RMThunk)();
-    static void (__interrupt far *Int24RMCallback)();
-#else
     static void (interrupt far *Int24RMThunk)();
     static void (interrupt far *Int24RMCallback)();
-#endif
     static unsigned Int24RMThunkSel;
+#endif
 
     friend class Int11trap;
 #endif

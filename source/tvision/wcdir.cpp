@@ -118,7 +118,9 @@ void fnmerge( char *pathP, const char *driveP, const char *dirP,
               const char *nameP, const char *extP )
 {
     unsigned n = 0;
-    pathP[0] = '\0';
+    // The destination is deliberately not cleared first: TFileList's fexpand
+    // hands this function components that alias pathP, so each one has to be
+    // read before anything is written over it.
     if( driveP && *driveP )
         {
         n = appendStr( pathP, n, driveP, MAXPATH );
@@ -137,8 +139,9 @@ void fnmerge( char *pathP, const char *driveP, const char *dirP,
         {
         if( *extP != '.' )
             n = appendStr( pathP, n, ".", MAXPATH );
-        appendStr( pathP, n, extP, MAXPATH );
+        n = appendStr( pathP, n, extP, MAXPATH );
         }
+    pathP[n] = '\0';
 }
 
 int getcurdir( int drive, char *direc )
@@ -163,6 +166,46 @@ int getcurdir( int drive, char *direc )
         return 0;
         }
     return -1;
+}
+
+// findfirst/findnext, over Watcom's _dos_findfirst/_dos_findnext. The two
+// structs cannot simply be cast to one another - see the note on struct
+// ffblk in <tvision/compat/borland/dir.h> - so the fields are copied across,
+// including the DOS search state that findnext resumes from.
+
+static void toFfblk( struct ffblk *ff, const struct find_t *f )
+{
+    memcpy( ff->ff_reserved, f->reserved, sizeof( ff->ff_reserved ) );
+    ff->ff_attrib = f->attrib;
+    ff->ff_ftime = f->wr_time;
+    ff->ff_fdate = f->wr_date;
+    ff->ff_fsize = f->size;
+    // A name longer than 8.3 has nowhere to go: ff_name is what Borland's
+    // dir.h declares, and TSearchRec is sized to match it.
+    strncpy( ff->ff_name, f->name, sizeof( ff->ff_name ) - 1 );
+    ff->ff_name[sizeof( ff->ff_name ) - 1] = '\0';
+}
+
+int findfirst( const char *path, struct ffblk *ff, int attrib )
+{
+    struct find_t f;
+
+    if( _dos_findfirst( path, attrib, &f ) != 0 )
+        return -1;
+    toFfblk( ff, &f );
+    return 0;
+}
+
+int findnext( struct ffblk *ff )
+{
+    struct find_t f;
+
+    memset( &f, 0, sizeof( f ) );
+    memcpy( f.reserved, ff->ff_reserved, sizeof( ff->ff_reserved ) );
+    if( _dos_findnext( &f ) != 0 )
+        return -1;
+    toFfblk( ff, &f );
+    return 0;
 }
 
 #endif // __WATCOMC__

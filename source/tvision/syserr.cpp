@@ -51,15 +51,12 @@ ushort _NEAR TSystemError::sysMonoAttr = 0x7070;
 Boolean _NEAR TSystemError::sysErrActive = False;
 Boolean _NEAR TSystemError::inIDE = False;
 
+#if !defined( __WATCOMC__ )
 TPMRegs TSystemError::Int24Regs;
-#if defined( __WATCOMC__ )
-void (__interrupt far *TSystemError::Int24RMThunk)();
-void (__interrupt far *TSystemError::Int24RMCallback)();
-#else
 void (interrupt far *TSystemError::Int24RMThunk)();
 void (interrupt far *TSystemError::Int24RMCallback)();
-#endif
 unsigned TSystemError::Int24RMThunkSel;
+#endif
 
 const int SecretWord = 1495;
 const int productID  =  136;
@@ -89,8 +86,10 @@ TSystemError::TSystemError() noexcept
     inIDE = False;
     checkIDE();
 
+#if !defined( __WATCOMC__ )
     if( THardwareInfo::getDPMIFlag() )
         setupDPMI();
+#endif
 #endif
     resume();
 }
@@ -98,13 +97,14 @@ TSystemError::TSystemError() noexcept
 TSystemError::~TSystemError()
 {
     suspend();
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
     if( THardwareInfo::getDPMIFlag() )
         shutdownDPMI();
 #endif
 }
 
-#if defined( __FLAT__ )             // 16-bit version is in SYSINT.ASM
+// The 16-bit versions are in SYSINT.ASM (Borland) and WCSYSINT.CPP (Watcom).
+#if defined( __FLAT__ )
 void TSystemError::resume() noexcept
 {
     THardwareInfo::setCtrlBrkHandler( TRUE );

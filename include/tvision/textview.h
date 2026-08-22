@@ -46,6 +46,12 @@ public:
 
     virtual int do_sputn( const char *s, int count ) = 0;
     virtual int overflow( int = EOF );
+#if defined( __WATCOMC__ )
+    // Watcom's std::streambuf declares underflow() pure, unlike Borland's
+    // and the modern STL's. A text device is write-only, so there is never
+    // anything there to read.
+    virtual int underflow();
+#endif
 
 protected:
 

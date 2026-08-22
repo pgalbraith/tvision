@@ -12,14 +12,27 @@
  *
  */
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// Watcom spells the interrupt-flag intrinsics _disable/_enable (see i86.h,
+// included via system.h).
+#define disable _disable
+#define enable  _enable
+#endif
+
 #define Uses_TView
 #define Uses_TGroup
 #define Uses_TScreen
 #define Uses_THardwareInfo
 #define Uses_TText
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// Real mode writes straight into video memory, so TVWrite has to take the
+// software mouse cursor down itself (see L50 below).
+#define Uses_TEvent
+#define Uses_TEventQueue
+#endif
 #include <tvision/tv.h>
 
-#if !defined( __FLAT__ )
+#if !defined( __FLAT__ ) && !defined( __WATCOMC__ )
 #error The 16-bit version of this file is in TVWRITE.ASM
 #else
 
@@ -49,6 +62,7 @@ struct TVWrite {
 #else
     void copyCell( TScreenCell *, const TScreenCell * ) noexcept;
     void copyShort2Cell( TScreenCell *, const ushort * ) noexcept;
+    void copyToBuffer( TScreenCell * ) noexcept;
 
     bool bufIsShort;
 
@@ -232,18 +246,41 @@ void TVWrite::L50( TGroup *owner ) noexcept
         copyShort2CharInfo(dst, src);
         THardwareInfo::screenWrite(X, Y, dst, Count - X);
     }
-#else
+#elif defined( __WATCOMC__ ) && !defined( __FLAT__ )
+    // In real mode TScreen::screenBuffer *is* video memory, so there is no
+    // separate screenWrite step. What there is instead is the software mouse
+    // cursor: writing over it leaves debris behind, so it has to come down
+    // first (TVWRITE.ASM @@41..@@43).
     TScreenCell *dst = &owner->buffer[Y*owner->size.x + X];
-    if (bufIsShort)
-    {
-        const ushort *src = &((const ushort *) Buffer)[X - wOffset];
-        copyShort2Cell(dst, src);
-    }
+    if (owner->buffer != TScreen::screenBuffer)
+        copyToBuffer(dst);
     else
     {
-        const TScreenCell *src = &((const TScreenCell *) Buffer)[X - wOffset];
-        copyCell(dst, src);
+        Boolean overlapped;
+        disable();
+        overlapped = Boolean( TEventQueue::curMouse.where.y == Y
+                              && X <= TEventQueue::curMouse.where.x
+                              && TEventQueue::curMouse.where.x < Count );
+        if (!overlapped)
+            TEventQueue::mouseIntFlag = False;
+        enable();
+        if (!overlapped)
+        {
+            copyToBuffer(dst);
+            // The mouse interrupt may have drawn the cursor into the span
+            // while the copy was under way.
+            overlapped = TEventQueue::mouseIntFlag;
+        }
+        if (overlapped)
+        {
+            TMouse::hide();
+            copyToBuffer(dst);
+            TMouse::show();
+        }
     }
+#else
+    TScreenCell *dst = &owner->buffer[Y*owner->size.x + X];
+    copyToBuffer(dst);
     if (owner->buffer == TScreen::screenBuffer)
         THardwareInfo::screenWrite(X, Y, dst, Count - X);
 #endif // __BORLANDC__
@@ -321,6 +358,20 @@ void TVWrite::copyShort2Cell( TScreenCell *dst, const ushort *src ) noexcept
             c.attribute = applyShadow(c.attribute);
             dst[i] = c;
         }
+}
+
+void TVWrite::copyToBuffer( TScreenCell *dst ) noexcept
+{
+    if (bufIsShort)
+    {
+        const ushort *src = &((const ushort *) Buffer)[X - wOffset];
+        copyShort2Cell(dst, src);
+    }
+    else
+    {
+        const TScreenCell *src = &((const TScreenCell *) Buffer)[X - wOffset];
+        copyCell(dst, src);
+    }
 }
 
 void TView::writeBuf( short x, short y, short w, short h, const TScreenCell* b ) noexcept

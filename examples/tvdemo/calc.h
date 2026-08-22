@@ -18,6 +18,10 @@
 #include <math.h>
 #endif       // __MATH_H
 
+#if !defined( __STDLIB_H )
+#include <stdlib.h>     // atof, used by getDisplay below
+#endif       // __STDLIB_H
+
 #define DISPLAYLEN  25      // Length (width) of calculator display
 
 enum TCalcState { csFirst = 1, csValid, csError };
