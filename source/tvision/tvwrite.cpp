@@ -247,10 +247,10 @@ void TVWrite::L50( TGroup *owner ) noexcept
         THardwareInfo::screenWrite(X, Y, dst, Count - X);
     }
 #elif defined( __WATCOMC__ ) && !defined( __FLAT__ )
-    // In real mode TScreen::screenBuffer *is* video memory, so there is no
-    // separate screenWrite step. What there is instead is the software mouse
-    // cursor: writing over it leaves debris behind, so it has to come down
-    // first (TVWRITE.ASM @@41..@@43).
+    // In real mode TScreen::screenBuffer is video memory itself, so there is
+    // no separate screenWrite step. Instead the software mouse cursor has to
+    // be taken down first, or writing over it leaves debris behind
+    // (TVWRITE.ASM @@41..@@43).
     TScreenCell *dst = &owner->buffer[Y*owner->size.x + X];
     if (owner->buffer != TScreen::screenBuffer)
         copyToBuffer(dst);

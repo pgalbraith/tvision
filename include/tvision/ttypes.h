@@ -42,11 +42,9 @@ typedef unsigned long ulong;
 #include <stddef.h>
 
 #if !defined( __BORLANDC__ )
-// Watcom's own <stdint.h> is pulled in transitively by several standard
-// headers (e.g. <cstring>), so hand-declaring these types (as done for
-// Borland below) conflicts with Watcom's own definitions in some
-// translation units but not others, depending on what else got included
-// first. Simplest fix: always use Watcom's own <stdint.h> directly.
+// Watcom's <stdint.h> arrives through other standard headers anyway, so
+// declaring these types by hand, as done for Borland below, would clash
+// with it in some files but not others. Use its own header instead.
 #include <stdint.h>
 #else
 typedef char int8_t;

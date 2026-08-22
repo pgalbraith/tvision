@@ -260,10 +260,9 @@ Boolean TEventQueue::getMouseState( TEvent & ev ) noexcept
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
 
-// Called by tvMouseIntStub (WCSTUBS.ASM), which is what the mouse driver
-// actually invokes: the stub saves all registers, loads DS with DGROUP and
-// passes the driver's register values on as plain arguments, replacing the
-// pseudo-register accesses of the Borland version below.
+// The mouse driver calls tvMouseIntStub (WCSTUBS.ASM), which saves the
+// registers, points DS at DGROUP, and passes the driver's values here as
+// plain arguments. The Borland version below reads them as pseudo-registers.
 extern "C" void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
                                         unsigned x, unsigned y )
 {

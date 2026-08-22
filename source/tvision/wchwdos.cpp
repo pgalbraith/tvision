@@ -40,12 +40,11 @@ static int keyWaiting()
     return BIOS_KBDHEAD != BIOS_KBDTAIL;
 }
 
-// The BIOS keeps the shift state at 0040:0017 in its own bit layout, while
-// the __FLAT__ build reads controlKeyState with Win32's (tkeys.h). They are
-// not the same: BIOS bit 3 is Alt, but 0x0008 is LEFT_CTRL_PRESSED, so an
-// untranslated byte turns Alt-X into Ctrl-X once TKey normalizes it and no
-// menu or status line hotkey matches. The byte cannot tell left from right
-// Ctrl and Alt (0040:0018 can), and TKey does not care.
+// The BIOS keeps the shift state at 0040:0017 in its own bit layout, but the
+// 32-bit code reads controlKeyState using Win32's layout (tkeys.h). The two
+// differ: BIOS bit 3 means Alt, while 0x0008 means LEFT_CTRL_PRESSED, so an
+// untranslated byte turns Alt-X into Ctrl-X and no hotkey matches. The BIOS
+// byte cannot tell left from right, which TKey does not need anyway.
 static ushort controlKeyState()
 {
     uchar bios = BIOS_SHIFTSTATE;
@@ -309,14 +308,12 @@ BOOL THardwareInfo::getKeyEvent( TEvent& event ) noexcept
     ushort keyCode = r.w.ax;
     ushort shiftState = controlKeyState();
 
-    // Views compare keyCode against the kb* constants, which for these
-    // combinations are Borland's own values rather than what an enhanced
-    // BIOS reports: Ctrl+Ins/Del come back as 0x9200/0x9300, and with
-    // NumLock off a shifted keypad Ins/Del is the character the shift
-    // un-inverts to. Borland's drivers delivered the kb* values - the real
-    // mode INT 09H hook rewrites the BIOS buffer, the console driver has its
-    // own key tables - so do the same here, or TEditor's key map (a raw
-    // comparison, unlike TKey) never sees a Ctrl+Del.
+    // Views compare keyCode against the kb* constants, which for these keys
+    // hold Borland's values rather than what an enhanced BIOS reports:
+    // Ctrl+Ins and Ctrl+Del arrive as 0x9200 and 0x9300, and with NumLock
+    // off a shifted keypad Ins or Del arrives as a character. Borland's
+    // drivers delivered the kb* values, so do the same here. TEditor's key
+    // map compares raw values, unlike TKey, and would never match otherwise.
     switch( keyCode )
         {
         case 0x9200: keyCode = kbCtrlIns; break;

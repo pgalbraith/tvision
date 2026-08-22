@@ -40,11 +40,9 @@
 #define _Cdecl      _RTLENTRY
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ ) && !defined( __DLL__ )
-// Watcom's own compiler doesn't predefine _FAR/_NEAR the way Borland's
-// native <_defs.h> does. In the common (non-DLL) 16-bit large-model case,
-// data is already far by default, so these can safely expand to nothing,
-// matching what tv.h does for __FLAT__ builds. (_NEAR is already handled
-// by ttypes.h before this header is reached.)
+// Watcom does not predefine _FAR the way Borland's own <_defs.h> does. In a
+// 16-bit large-model program that is not a DLL, data is far already, so it
+// can expand to nothing. (_NEAR is handled in ttypes.h, before this point.)
 #define _FAR
 #endif
 

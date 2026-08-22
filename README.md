@@ -28,7 +28,7 @@ The original location of this project is https://github.com/magiblot/tvision.
     * [Windows (MSVC)](#build-msvc)
     * [Windows (MinGW)](#build-mingw)
     * [Windows/DOS (Borland C++)](#build-borland)
-    * [Windows/DOS (Open Watcom)](#build-watcom)
+    * [DOS (Open Watcom)](#build-watcom)
     * [Vcpkg](#build-vcpkg)
     * [Turbo Vision as a CMake dependency](#build-cmake)
 * [Features](#features)
@@ -78,7 +78,7 @@ If you just want to test the demo applications:
     * `examples-x64.zip`: 64-bit executables built with MSVC. x64 Windows Vista or later required.
     * `examples-dos.zip`: 16-bit DOS executables built with Borland C++. No Unicode support.
     * `examples-dpmi32.zip`: 32-bit Windows/DOS executables built with Borland C++. No Unicode support.
-    * `examples-watcom.zip`: 16-bit DOS, 32-bit DOS/4G and Win32 executables built with Open Watcom. No Unicode support.
+    * `examples-watcom.zip`: 16-bit DOS and 32-bit DOS/4G executables built with Open Watcom. No Unicode support.
 
 ## Build environment
 
@@ -224,17 +224,20 @@ I'm sorry, the root makefile assumes it is executed from the `project` directory
 
 <div id="build-watcom"></div>
 
-### Windows/DOS (Open Watcom)
+### DOS (Open Watcom)
 
-Turbo Vision can also be built with Open Watcom 1.9, which targets the same legacy environments as Borland C++. Everything this document says about Borland C++ builds applies to Open Watcom builds too: there is no Unicode support, and none of the features listed as unavailable on Borland C++ are available here either.
+Turbo Vision can also be built with Open Watcom 1.9 for DOS. Everything this document says about Borland C++ builds applies to Open Watcom builds too: there is no Unicode support, and none of the features listed as unavailable on Borland C++ are available here either.
 
-Three targets are supported:
+Two targets are supported:
 
 | `TARGET` | Environment | Library |
 | --- | --- | --- |
 | `dos16` | 16-bit real mode DOS, large model | `LIB/tvw16.lib` |
 | `dos32` | 32-bit DOS/4G extender, flat model | `LIB/tvw32.lib` |
-| `win32` | 32-bit Win32 console, flat model | `LIB/tvwnt.lib` |
+
+This build exists so that DOS binaries can be produced from a modern development environment. Borland C++ can target DOS as well, but it needs a 1990s toolchain, including an installer that will not run on 64-bit Windows, as described in the section above. Open Watcom installs and runs on current Windows, and the build can be driven from a script or a CI job.
+
+There is no Win32 target, because none is needed. [MSVC](#build-msvc) and [MinGW](#build-mingw) already build Turbo Vision for the Win32 console through CMake, from the same modern environment, and with Unicode, UTF-8 console support and 24-bit color as well. Use that build for Win32.
 
 The makefile is in `project/watcom` and is built with `wmake`:
 
@@ -247,19 +250,19 @@ wmake -h TARGET=dos16
 
 * `DEBUG=1` for full debug information and no optimization. Without it, the build is optimized.
 * `EXAMPLES=` to override the list of example programs (`tvdemo tvedit tvhc tvdir tvforms` by default).
-* `EXTENDER=` (`dos32` only) to choose the DOS extender the examples are linked for: `dos4g`, the default, or `causeway`. Both ship with Open Watcom. A DOS/4G program needs `dos4gw.exe` next to it or on `PATH` at run time; a CauseWay program has the extender bound into the executable and runs on its own. The library is the same either way, so switching only relinks the examples. Be aware that the CauseWay build has never been seen to run — see [`project/watcom/README.md`](project/watcom/README.md).
+* `EXTENDER=` (`dos32` only) to choose which DOS extender the examples are linked for: `dos4g`, the default, or `causeway`. Both come with Open Watcom. A DOS/4G program needs `dos4gw.exe` beside it or on `PATH` when it runs; a CauseWay program carries the extender inside the executable and runs on its own. The library is the same either way, so changing this only relinks the examples. Note that the CauseWay build has never been seen to run — see [`project/watcom/README.md`](project/watcom/README.md).
 
-Adding `lib` as a goal builds the library alone, and `clean` removes a target's output. Libraries are written to the `LIB` directory, objects and executables to `project/watcom/<TARGET>`.
+Adding `lib` to the command builds only the library, and `clean` deletes a target's output. Libraries are written to the `LIB` directory, and object files and executables to `project/watcom/<TARGET>`.
 
-Open Watcom's `binnt` (or `binw`) directory must be on `PATH`, because `wlink` finds its system definitions there and nowhere else. `WATCOM` must name the installation root: the makefile takes the RTL headers from it, so `INCLUDE` does not need to be set.
+Open Watcom's `binnt` (or `binw`) directory must be on `PATH`: the linker looks there, and nowhere else, for the files describing the systems it can link for. `WATCOM` must be set to the installation directory, since the makefile takes the run-time library headers from it. `INCLUDE` does not need to be set.
 
-`LIB/tvw16.lib` is a large-model library, and applications must be compiled `-ml` to link against it: on 16-bit DOS the memory model is part of the ABI, and a mismatch shows up only as unresolved or wrongly resolved symbols. There is no small, medium or compact build. The 32-bit libraries are flat-model (`-mf`), where the question does not arise.
+`LIB/tvw16.lib` is built for the large memory model, and an application must be compiled with `-ml` to link against it. On 16-bit DOS the memory model is part of the binary interface between a program and the library, and a mismatch is not reported directly: it appears as unresolved symbols, or as symbols that resolve to the wrong thing. There is no small, medium or compact build. `LIB/tvw32.lib` uses the flat model, where this does not apply.
 
-The library needs `-xr` (RTTI), which the makefile passes. It is not optional: `source/tvision/tobjstrm.cpp` uses `dynamic_cast<void *>`, which Open Watcom rejects without it. Applications do not need it unless they use RTTI themselves.
+The library must be compiled with `-xr`, which enables run-time type information, and the makefile passes it. This is not optional: `source/tvision/tobjstrm.cpp` uses `dynamic_cast<void *>`, which Open Watcom rejects otherwise. Applications only need the flag if they use run-time type information themselves.
 
-The `tvforms` example needs the data files that its `genparts` and `genphone` programs write. The `win32` build runs them itself, producing `parts.f32` and `phonenum.f32`, which serve the `dos32` build as well, since both are flat-model targets. For `dos16`, run `dos16/genparts.exe` and `dos16/genphone.exe` under DOS to get the `.f16` files.
+The `tvforms` example needs the data files that its `genparts` and `genphone` programs write, and those programs can only run under the target they were built for. The flat-model files are therefore checked in as `examples/tvforms/parts.f32` and `phonenum.f32`, and the `dos32` build copies them next to `tvforms.exe`. There are no checked-in `.f16` files: for `dos16`, run `dos16/genparts.exe` and `dos16/genphone.exe` under DOS to produce them.
 
-[`project/watcom/README.md`](project/watcom/README.md) records what has been verified on each target and the known limitations of the resulting builds.
+[`project/watcom/README.md`](project/watcom/README.md) records what has been tested on each target, and the known limitations of the resulting builds.
 
 <div id="build-vcpkg"></div>
 

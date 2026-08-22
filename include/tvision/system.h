@@ -576,9 +576,8 @@ public:
 private:
 
 #if defined( __WATCOMC__ )
-    // Watcom interrupt handlers receive the interrupted context's registers
-    // through an INTPACK parameter instead of Borland's _AX/_BX
-    // pseudo-registers, so the signatures differ.
+    // Watcom passes the interrupted registers in an INTPACK parameter,
+    // where Borland used the _AX/_BX pseudo-registers.
     static void __interrupt far handler( union INTPACK );
     static void (__interrupt far * _NEAR oldHandler)();
 #else

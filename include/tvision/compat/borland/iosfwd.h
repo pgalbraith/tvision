@@ -12,11 +12,10 @@ typedef long streamoff;
 
 #elif defined( __WATCOMC__ )
 
-// Watcom's own <iosfwd> doesn't declare streampos/streamoff (those live in
-// <ios>), and forward-declaring ostream/streambuf by hand here conflicts
-// with Watcom's real (std-namespaced) classes once something else pulls in
-// <iostream>/<fstream>. So just use the real headers, same as the portable
-// branch below.
+// Watcom's <iosfwd> has no streampos or streamoff; they are in <ios>. And
+// declaring ostream and streambuf by hand clashes with the real std::
+// classes as soon as <iostream> is included. Use the real headers, as the
+// branch below does.
 #include <iosfwd>
 #include <ios>
 

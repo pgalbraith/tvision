@@ -279,7 +279,7 @@ jobs:
           LIB/tv.lib
 
   build-watcom:
-    name: Open Watcom (DOS16, DOS/4G, Win32)
+    name: Open Watcom (DOS16, DOS/4G)
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v7
@@ -297,10 +297,6 @@ jobs:
       shell: bash
       run: cd project/watcom && wmake -h TARGET=dos32
 
-    - name: Build (Win32)
-      shell: bash
-      run: cd project/watcom && wmake -h TARGET=win32
-
     - name: Upload Examples
       uses: actions/upload-artifact@v7
       with:
@@ -308,11 +304,9 @@ jobs:
         path: |
           project/watcom/dos16/*.exe
           project/watcom/dos32/*.exe
-          project/watcom/win32/*.exe
-          project/watcom/win32/*.f32
+          project/watcom/dos32/*.f32
           project/watcom/dos16/demohelp.h16
           project/watcom/dos32/demohelp.h32
-          project/watcom/win32/demohelp.h32
 
     - name: Upload Library
       uses: actions/upload-artifact@v7
@@ -321,7 +315,6 @@ jobs:
         path: |
           LIB/tvw16.lib
           LIB/tvw32.lib
-          LIB/tvwnt.lib
 
   build-macos-clang:
     name: MacOS (Clang)

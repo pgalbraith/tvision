@@ -33,12 +33,10 @@
 #include <dos.h>
 #undef TVISION_COMPAT_DOS_INCNEXT
 #elif defined(__WATCOMC__)
-// Safe to include bare, unlike the MinGW case above: this directory isn't
-// on the general include search path, so this resolves to Watcom's own
-// <dos.h> (providing _dos_findfirst, _dos_getvect, _chain_intr, etc.)
-// rather than back to this file. The FA_*/ffblk definitions below are
-// still provided on top of it, since Watcom only has the _A_*/find_t
-// spellings.
+// Unlike the MinGW case above, this can be included plainly: this directory
+// is not on the general include path, so it finds Watcom's own <dos.h>
+// rather than this file again. The FA_* and ffblk definitions below are
+// still needed, since Watcom only provides the _A_* and find_t names.
 #include <dos.h>
 #endif
 

@@ -40,11 +40,10 @@
 
 #ifndef _FFBLK_DEF
 #define _FFBLK_DEF
-// Borland's layout, which is also the DOS DTA's. Watcom's find_t is not
-// interchangeable with it: <dos.h> declares find_t under '#pragma pack(1)'
-// while this struct takes the target's normal alignment, and find_t's name
-// field is NAME_MAX+1 bytes - 260 on the Win32 target, not 13. So
-// findfirst/findnext (wcdir.cpp) copy between the two rather than casting.
+// Borland's layout, which is also the one DOS itself uses. Watcom's find_t
+// is packed to one byte and this struct is not, so the fields after
+// ff_attrib sit at different offsets. findfirst and findnext in wcdir.cpp
+// therefore copy between the two rather than casting.
 struct  ffblk   {
     char            ff_reserved[21];
     char            ff_attrib;

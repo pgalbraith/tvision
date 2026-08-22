@@ -117,9 +117,8 @@ void TSystemError::suspend() noexcept
 #endif
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
-// The assembly implementation in SWAPST.ASM takes plain arguments through
-// an extern "C" interface instead of referencing TScreen's statics through
-// a compiler-specific name mangling scheme the way the Borland build does.
+// SWAPST.ASM takes plain arguments through an extern "C" interface, rather
+// than referring to TScreen's members by their mangled C++ names.
 extern "C" void __cdecl tvSwapStatusLine( void _FAR *bufData,
                                           void _FAR *scrBuf,
                                           unsigned width, unsigned height );

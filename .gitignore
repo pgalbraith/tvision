@@ -39,6 +39,11 @@
 *.[tT][rR]2
 *.[fhFH]16
 *.[fhFH]32
+# ... except tvforms' 32-bit data files, which are checked in like the demo
+# help files: only genparts and genphone can write them, and those run under
+# DOS.
+!examples/tvforms/parts.f32
+!examples/tvforms/phonenum.f32
 [oO][bB][jJ]*/
 *.kate-swp
 *.a
@@ -58,8 +63,8 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Makefile
-# ... but not the hand-written Open Watcom one (core.ignorecase on Windows
-# makes the pattern above match it).
+# ... but not the hand-written Open Watcom makefile: git ignores case on
+# Windows, so the pattern above matches it too.
 !project/watcom/makefile
 cmake_install.cmake
 compile_commands.json

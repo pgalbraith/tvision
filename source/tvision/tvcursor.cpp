@@ -27,11 +27,10 @@
 #include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
-// Real mode has no THardwareInfo caret API: TVCURSOR.ASM drove INT 10h
-// directly, and so does this. The caret size travelling through
-// TVCursor::computeCaretSize is therefore the same start/end percentage pair
-// that TScreen::cursorLines holds, not the single percentage the 32-bit
-// targets pass to THardwareInfo::setCaretSize.
+// Real mode has no THardwareInfo caret functions: TVCURSOR.ASM used INT 10h
+// directly, and so does this. So the size passed through
+// TVCursor::computeCaretSize is the start/end pair held in
+// TScreen::cursorLines, not the single percentage the 32-bit target uses.
 
 static void dosSetCaretPosition( int x, int y )
 {

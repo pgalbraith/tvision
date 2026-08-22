@@ -118,15 +118,13 @@ static void __interrupt _FAR int09Handler()
 
     oldInt09();
 
-    // Borland's handler sampled port 60H *before* chaining, trusting the
-    // keyboard controller to hand the BIOS the same byte again. A controller
-    // that pops its output buffer on every read (QEMU's i8042, for one)
-    // instead serves the BIOS the *next* byte, so the E0 prefix of a grey
-    // cursor key vanished and the key that followed was delivered twice.
-    // So the BIOS goes first, and the scan code comes from the keystroke it
-    // queued; port 60H is only read when it queued nothing - for the keys
-    // the conversion table exists for, the ones old BIOSes drop - and never
-    // on the E0 prefix itself, when the next byte may already be waiting.
+    // Borland's handler read port 60H before chaining, assuming the keyboard
+    // controller would hand the BIOS the same byte again. A controller that
+    // pops its output buffer on every read (QEMU's i8042) gives the BIOS the
+    // next byte instead, so the E0 prefix of a grey cursor key was lost and
+    // the key after it arrived twice. Chain first, then take the scan code
+    // from what the BIOS queued. Port 60H is read only when it queued
+    // nothing, and never for an E0 prefix.
     flags = *biosByte( biosKeyFlags );
     if( tail != *biosWord( biosKeyBufTail ) )
         {

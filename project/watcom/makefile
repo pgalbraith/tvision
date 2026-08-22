@@ -5,69 +5,64 @@
 #
 #       wmake -h TARGET=dos16     16-bit real mode DOS, large model   (tvw16.lib)
 #       wmake -h TARGET=dos32     32-bit DOS extender, flat model     (tvw32.lib)
-#       wmake -h TARGET=win32     32-bit Win32 console, flat model    (tvwnt.lib)
+#
+#   There is no Win32 target, because none is needed: the CMake build (MSVC,
+#   MinGW) already covers the Win32 console.
 #
 #   TARGET defaults to dos16. Run from this directory. Libraries go to
-#   ..\..\LIB, objects and executables to .\<TARGET>. Other macros:
+#   ..\..\LIB, object files and executables to .\<TARGET>. Other macros:
 #
-#       DEBUG=1     full debug info (-d2 / -d1, wlink debug all) and no
-#                   optimization; without it the compiler optimizes
-#       EXAMPLES=   override the example list
+#       DEBUG=1     full debug information (-d2 / -d1, wlink debug all) and
+#                   no optimization; without it the build is optimized
+#       EXAMPLES=   override the list of example programs
 #                   (default: tvdemo tvedit tvhc tvdir tvforms)
 #       EXTENDER=   dos32 only: which DOS extender the examples are linked
-#                   for. dos4g (the default) needs dos4gw.exe from Watcom's
-#                   binw directory next to the program, or on PATH, at run
-#                   time; causeway binds the whole extender into the .exe
-#                   (cwstub.exe), so the program runs on its own. Both
-#                   come with Open Watcom; CauseWay is free software,
-#                   DOS/4GW is Tenberry's and only redistributable under
-#                   the terms in binw\dos4gw.doc. The library is the same
-#                   either way - the choice only affects linking. Note that
-#                   the CauseWay build has not been seen to run: the 4.04
-#                   extender bundled with Open Watcom 1.9 faults at startup
-#                   under FreeDOS 1.4 in QEMU for any program at all, a
-#                   plain printf() included, so the option is offered but
-#                   unproven. See project\watcom\README.md.
+#                   for. dos4g, the default, needs dos4gw.exe from Watcom's
+#                   binw directory beside the program or on PATH when it
+#                   runs; causeway puts the extender inside the .exe, so the
+#                   program runs on its own. Both come with Open Watcom. The
+#                   library is the same either way, so this only affects
+#                   linking. The CauseWay build has never been seen to run -
+#                   read project\watcom\README.md before using it.
 #
-#   tvforms needs its two forms data files, which the genparts and genphone
-#   programs write when run. They are built for every target, but can only
-#   be run where the target's executables run: the win32 build runs them
-#   itself (the 'forms' target, part of 'all'), producing parts.f32 and
-#   phonenum.f32 in .\win32 - and those files also serve the DOS/4G build,
-#   since both are __FLAT__ targets. For dos16, run .\dos16\genparts.exe
-#   and genphone.exe under DOS to get the .f16 files.
+#   tvforms reads two data files, written by the genparts and genphone
+#   programs. Those can only run under the target they were built for, so the
+#   32-bit files are checked in as examples\tvforms\parts.f32 and
+#   phonenum.f32, and the 'forms' target (part of 'all' for dos32) copies
+#   them next to tvforms.exe. There are no checked-in .f16 files: for dos16,
+#   run .\dos16\genparts.exe and genphone.exe under DOS to produce them.
 #
-#   tvdemo opens its help file (F1) from the current directory, so the
-#   'help' target copies the checked-in examples\tvdemo\demohelp.h16 (dos16)
-#   or demohelp.h32 (dos32, win32) next to tvdemo.exe. The files are not
-#   regenerated: they ship with the repository, together with demohelp.h,
-#   which holds the matching help context numbers.
+#   tvdemo opens its help file (F1) from the current directory, so the 'help'
+#   target copies the checked-in examples\tvdemo\demohelp.h16 (dos16) or
+#   demohelp.h32 (dos32) next to tvdemo.exe. Those files are not regenerated
+#   here; they come with the repository, along with demohelp.h, which holds
+#   the matching help context numbers.
 #
-#   Open Watcom's binnt (or binw) directory must be on PATH: wlink only finds
-#   its system definitions (wlsystem.lnk) through PATH, not by absolute
-#   invocation. WATCOM must name the installation root; the RTL headers are
-#   taken from there rather than from INCLUDE, so the makefile does not
-#   depend on how the environment was set up (open-watcom/setup-watcom's
-#   default INCLUDE, for one, has no h\nt).
+#   Open Watcom's binnt (or binw) directory must be on PATH: wlink looks
+#   there, and nowhere else, for the file describing the systems it can link
+#   for (wlsystem.lnk). WATCOM must be set to the installation directory,
+#   because the run-time library headers are taken from there rather than
+#   from INCLUDE. That way the makefile does not depend on how the
+#   environment was set up.
 #
-#   Notes that are easy to lose:
+#   Notes:
 #
-#   - -xr (RTTI) is required for the whole tree: tobjstrm.cpp uses
-#     dynamic_cast<void *>, which Watcom rejects without it.
-#   - tvw16.lib is a large-model (-ml) library, and applications must be
-#     compiled -ml to link against it: the memory model is part of the ABI
-#     (pointer sizes, calling convention), and wlink does not diagnose a
-#     mismatch beyond unresolved or misresolved symbols. There is no small,
-#     medium or compact build - the library addresses far data throughout.
+#   - -xr, which enables run-time type information, is required for every
+#     file: tobjstrm.cpp uses dynamic_cast<void *>, which Watcom rejects
+#     without it.
+#   - tvw16.lib is built for the large memory model (-ml), and applications
+#     must be compiled -ml to link against it. The memory model decides
+#     pointer sizes and how the library reaches its own data, and wlink
+#     reports a mismatch only as unresolved symbols, or as symbols that
+#     resolve to the wrong thing. There is no small, medium or compact
+#     build: the library uses far pointers for data throughout.
 #   - Only hardware.asm, swapst.asm and wcstubs.asm are assembled, and only
-#     for the 16-bit target. Every other .asm file has a C++ twin that is
-#     compiled instead, so there is no GENINC / TVWRITE.INC step (tv.inc
-#     skips the include under __WASM__).
-#   - geninc.cpp is the Borland GENINC tool, not library code.
-#   - Win32 needs _WIN32_WINNT=0x0501 and psapi.lib (the examples touch
-#     GetConsoleWindow / process information).
+#     for the 16-bit target. Every other .asm file has a C++ equivalent that
+#     is compiled instead. That is why nothing here generates TVWRITE.INC
+#     with the GENINC tool: tv.inc skips that include when assembled by
+#     wasm (__WASM__).
+#   - geninc.cpp is the Borland GENINC tool, not part of the library.
 #
-
 !ifndef TARGET
 TARGET = dos16
 !endif
@@ -94,11 +89,8 @@ LIBNAME = tvw16.lib
 CMODEL  = -bt=dos -ml
 AMODEL  = -0 -ml
 EXTSTAMP =
-RTLINC  = -i=$(%WATCOM)\h
 LNKOPTS = option stack=8k
 AOBJS   = hardware.obj swapst.obj wcstubs.obj
-XDEFS   =
-XLIBS   =
 FORMS   =
 HELPEXT = h16
 !else ifeq TARGET dos32
@@ -117,39 +109,21 @@ LIBNAME = tvw32.lib
 CMODEL  = -bt=dos -mf
 AMODEL  = -3 -mf
 EXTSTAMP = $(OBJDIR)\$(EXTENDER).ext
-RTLINC  = -i=$(%WATCOM)\h
 LNKOPTS = option stack=32k
 AOBJS   =
-XDEFS   =
-XLIBS   =
-FORMS   =
-HELPEXT = h32
-!else ifeq TARGET win32
-CC      = wpp386
-ASM     = wasm
-SYSTEM  = nt
-LIBNAME = tvwnt.lib
-CMODEL  = -bt=nt -mf
-AMODEL  = -3 -mf
-EXTSTAMP =
-RTLINC  = -i=$(%WATCOM)\h -i=$(%WATCOM)\h\nt
-LNKOPTS = option stack=32k
-AOBJS   =
-XDEFS   = -D_WIN32_WINNT=0x0501
-XLIBS   = library psapi.lib
 FORMS   = forms
 HELPEXT = h32
 !else
-!error TARGET must be one of dos16, dos32, win32
+!error TARGET must be dos16 or dos32
 !endif
 
 !ifndef %WATCOM
 !error WATCOM must be set to the Open Watcom installation directory
 !endif
 
-# -obmiler -ot is -ox (the usual release setting) minus -s, so stack overflow
-# checking stays on, and without -oa: relaxed aliasing is unsafe for
-# TScreenCell, which reinterprets itself through a ushort pointer.
+# -obmiler -ot is the usual release setting -ox, without -s so that stack
+# overflow checking stays on, and without -oa because TScreenCell reads
+# itself through a ushort pointer, which relaxed aliasing would break.
 !ifdef DEBUG
 CDEBUG  = -d2 -od
 ADEBUG  = -d1
@@ -164,7 +138,7 @@ LIB     = wlib
 LINK    = wlink
 LIBFILE = $(LIBDIR)\$(LIBNAME)
 
-CFLAGS  = $(CMODEL) -zq -xr -w1 $(CDEBUG) $(XDEFS) -i=$(TVINC) $(RTLINC)
+CFLAGS  = $(CMODEL) -zq -xr -w1 $(CDEBUG) -i=$(TVINC) -i=$(%WATCOM)\h
 AFLAGS  = $(AMODEL) -q -zq $(ADEBUG)
 
 # --------------------------------------------------------------- path search
@@ -179,14 +153,14 @@ AFLAGS  = $(AMODEL) -q -zq $(ADEBUG)
 
 # ------------------------------------------------------------------ objects
 
-# Translated assembly (portable C++ twins of the Borland .asm files).
+# C++ versions of the Borland .asm files.
 TOBJS1 = edits.obj framelin.obj tgrmv.obj ttprvlns.obj tvcursor.obj &
          tvexposd.obj tvwrite.obj
 
-# Watcom-specific platform files: DOS/4G and Win32 hardware drivers, the
-# 16-bit interrupt layer, findfirst/findnext. Each compiles to an empty
-# object on the targets it does not apply to.
-TOBJS2 = wchwdos.obj wchwnt.obj wcsysint.obj wcdir.obj
+# Watcom-specific platform files: the DOS/4G hardware driver, the 16-bit
+# interrupt layer, findfirst/findnext. Each compiles to an empty object on
+# the target it does not apply to.
+TOBJS2 = wchwdos.obj wcsysint.obj wcdir.obj
 
 TOBJS3 = colorsel.obj drivers.obj  drivers2.obj editstat.obj &
          fmtstr.obj   grp.obj      hardwrvr.obj help.obj     &
@@ -290,62 +264,58 @@ tvforms : $(OUTDIR)\tvforms.exe $(OUTDIR)\genparts.exe $(OUTDIR)\genphone.exe .S
 $(OUTDIR)\tvdemo.exe : $(TVDEMO_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(TVDEMO_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\tvedit.exe : $(TVEDIT_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(TVEDIT_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\tvhc.exe : $(TVHC_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(TVHC_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\tvdir.exe : $(TVDIR_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(TVDIR_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\tvforms.exe : $(TVFORMS_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(TVFORMS_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\genparts.exe : $(GENPARTS_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(GENPARTS_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 $(OUTDIR)\genphone.exe : $(GENPHONE_OBJS) $(LIBFILE) $(EXTSTAMP)
     @%create $(OBJDIR)\$^&.lnk
     @for %i in ($(GENPHONE_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
-    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE)
 
 !ifeq TARGET dos32
-# Switching EXTENDER relinks the examples but changes no object, so wmake
-# would otherwise leave the previous extender's executables in place. The
-# examples depend on a stamp file named after the chosen extender: asking
-# for the other one names a file that does not exist, and creating it
-# discards the previous stamp.
+# Switching EXTENDER changes no object file, so wmake would otherwise think
+# the existing executables were up to date. The examples depend on a marker
+# file named after the chosen extender, so switching asks for a file that
+# does not exist yet; creating it deletes the previous one.
 $(EXTSTAMP) :
     @if exist $(OBJDIR)\*.ext del $(OBJDIR)\*.ext
     @%create $^@
 !endif
 
-# The generators write their data file to the current directory, so run
-# them from the output directory, next to tvforms.exe.
+# tvforms reads its data files from the current directory. They are checked in
+# rather than generated here, because only genparts and genphone can write
+# them and those run under DOS. dos16 has no checked-in copies.
 forms : $(OUTDIR)\parts.f32 $(OUTDIR)\phonenum.f32 .SYMBOLIC
 
-$(OUTDIR)\parts.f32 : $(OUTDIR)\genparts.exe
-    cd $(OUTDIR)
-    .\genparts.exe
-    cd ..
+$(OUTDIR)\parts.f32 : $(EXDIR)\tvforms\parts.f32
+    copy $[@ $^@ >nul
 
-$(OUTDIR)\phonenum.f32 : $(OUTDIR)\genphone.exe
-    cd $(OUTDIR)
-    .\genphone.exe
-    cd ..
+$(OUTDIR)\phonenum.f32 : $(EXDIR)\tvforms\phonenum.f32
+    copy $[@ $^@ >nul
 
 # tvdemo looks for its help file in the current directory.
 help : $(OUTDIR)\demohelp.$(HELPEXT) .SYMBOLIC

@@ -26,9 +26,8 @@ struct  ftime   {
 #include <io.h>
 #undef TVISION_COMPAT_IO_INCNEXT
 #elif defined(__WATCOMC__)
-// Safe to include bare, unlike the MinGW case above: this directory isn't
-// on the general include search path, so this resolves to Watcom's own
-// <io.h> rather than back to this file.
+// Unlike the MinGW case above, this can be included plainly: it finds
+// Watcom's own <io.h> rather than this file again.
 #include <io.h>
 #elif !defined(_WIN32)
 

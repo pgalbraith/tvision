@@ -51,9 +51,8 @@ public:
 
     static uint32_t getTickCount() noexcept;
 #if defined( __BORLANDC__ ) || ( defined( __WATCOMC__ ) && !defined( __FLAT__ ) )
-    // Watcom's 32-bit targets keep the 64-bit signature (matching the real
-    // implementation they link against); only the 16-bit inline
-    // implementation below is hard-coded to uint32_t.
+    // Only the 16-bit build returns 32 bits, matching the inline
+    // implementation further down; the 32-bit build returns 64.
     static uint32_t getTickCountMs();
 #else
     static uint64_t getTickCountMs() noexcept;
@@ -167,13 +166,10 @@ private:
 };
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
-// Under Watcom, the 16-bit assembly routines in HARDWARE.ASM cannot use
-// Borland's mangled C++ names, so the shared state and entry points are
-// plain extern "C" symbols instead of THardwareInfo static members.
-// __cdecl matches the stack-based argument passing and '_name' symbol
-// decoration produced by WASM's '.MODEL <model>, C' language type (Watcom's
-// default calling convention would pass arguments in registers and decorate
-// as 'name_' instead).
+// The 16-bit routines in HARDWARE.ASM cannot use Borland's mangled C++
+// names, so this state and these entry points are extern "C" rather than
+// members of THardwareInfo. __cdecl matches what WASM's '.MODEL <model>, C'
+// produces: arguments on the stack, and a leading underscore on the name.
 extern "C" {
     void __cdecl tvHWInfoCtor( void );
     void __cdecl tvHWInfoDtor( void );
@@ -184,9 +180,8 @@ extern "C" {
     extern ushort tvMonoSel;
     extern ushort tvBiosSel;
 }
-// These selector names are remapped only around this header's own inline
-// method bodies (see below) and #undef'd again before the header ends,
-// because e.g. 'monoSel' is also a TColorDialog member name in colorsel.h.
+// Mapped only for the inline bodies below, and undefined again before the
+// end of the header: 'monoSel' is also a TColorDialog member in colorsel.h.
 #define dpmiFlag tvDpmiFlag
 #define colorSel tvColorSel
 #define monoSel  tvMonoSel

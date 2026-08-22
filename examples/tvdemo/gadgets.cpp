@@ -116,9 +116,7 @@ uint32_t THeapView::heapSize()
 #elif defined( _WIN32 )
     // When on Windows, display the virtual memory used by the process.
     HANDLE hProcess = GetCurrentProcess();
-    // Not brace-initialized: Open Watcom 1.9 is a C++98 compiler.
-    PROCESS_MEMORY_COUNTERS_EX pmc;
-    memset(&pmc, 0, sizeof(pmc));
+    PROCESS_MEMORY_COUNTERS_EX pmc {};
     GetProcessMemoryInfo(hProcess, (PROCESS_MEMORY_COUNTERS *) &pmc, sizeof(pmc));
     totalStr << setw(12) << pmc.PrivateUsage << ends;
     return (uint32_t) pmc.PrivateUsage;
