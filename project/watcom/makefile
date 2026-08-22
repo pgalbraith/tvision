@@ -11,7 +11,16 @@
 #   ..\..\LIB, objects and executables to .\<TARGET>. Other macros:
 #
 #       DEBUG=1     full debug info (-d2 / -d1, wlink debug all)
-#       EXAMPLES=   override the example list (default: tvdemo tvedit tvhc tvdir)
+#       EXAMPLES=   override the example list
+#                   (default: tvdemo tvedit tvhc tvdir tvforms)
+#
+#   tvforms needs its two forms data files, which the genparts and genphone
+#   programs write when run. They are built for every target, but can only
+#   be run where the target's executables run: the win32 build runs them
+#   itself (the 'forms' target, part of 'all'), producing parts.f32 and
+#   phonenum.f32 in .\win32 - and those files also serve the DOS/4G build,
+#   since both are __FLAT__ targets. For dos16, run .\dos16\genparts.exe
+#   and genphone.exe under DOS to get the .f16 files.
 #
 #   Open Watcom's binnt (or binw) directory must be on PATH: wlink only finds
 #   its system definitions (wlsystem.lnk) through PATH, not by absolute
@@ -43,7 +52,7 @@ OUTDIR  = $(TARGET)
 OBJDIR  = $(OUTDIR)\obj
 
 !ifndef EXAMPLES
-EXAMPLES = tvdemo tvedit tvhc tvdir
+EXAMPLES = tvdemo tvedit tvhc tvdir tvforms
 !endif
 
 # ------------------------------------------------------------------ targets
@@ -59,6 +68,7 @@ LNKOPTS = option stack=8k
 AOBJS   = hardware.obj swapst.obj wcstubs.obj
 XDEFS   =
 XLIBS   =
+FORMS   =
 !else ifeq TARGET dos32
 CC      = wpp386
 ASM     = wasm
@@ -70,6 +80,7 @@ LNKOPTS = option stack=32k
 AOBJS   =
 XDEFS   =
 XLIBS   =
+FORMS   =
 !else ifeq TARGET win32
 CC      = wpp386
 ASM     = wasm
@@ -81,6 +92,7 @@ LNKOPTS = option stack=32k
 AOBJS   =
 XDEFS   = -D_WIN32_WINNT=0x0501
 XLIBS   = library psapi.lib
+FORMS   = forms
 !else
 !error TARGET must be one of dos16, dos32, win32
 !endif
@@ -107,7 +119,7 @@ AFLAGS  = $(AMODEL) -q -zq $(ADEBUG)
 .EXTENSIONS:
 .EXTENSIONS: .exe .lib .obj .cpp .asm
 
-.cpp : $(TVSRC);$(EXDIR)\tvdemo;$(EXDIR)\tvedit;$(EXDIR)\tvhc;$(EXDIR)\tvdir
+.cpp : $(TVSRC);$(EXDIR)\tvdemo;$(EXDIR)\tvedit;$(EXDIR)\tvhc;$(EXDIR)\tvdir;$(EXDIR)\tvforms
 .asm : $(TVSRC)
 .obj : $(OBJDIR)
 .exe : $(OUTDIR)
@@ -178,10 +190,14 @@ TVDEMO_OBJS = ascii.obj    backgrnd.obj calc.obj     calendar.obj &
 TVEDIT_OBJS = tvedit1.obj tvedit2.obj tvedit3.obj
 TVHC_OBJS   = tvhc.obj
 TVDIR_OBJS  = tvdir.obj
+FORMS_OBJS  = forms.obj datacoll.obj fields.obj listdlg.obj
+TVFORMS_OBJS = tvforms.obj $(FORMS_OBJS)
+GENPARTS_OBJS = genparts.obj $(FORMS_OBJS)
+GENPHONE_OBJS = genphone.obj $(FORMS_OBJS)
 
 # -------------------------------------------------------------------- rules
 
-all : dirs $(LIBFILE) $(EXAMPLES) .SYMBOLIC
+all : dirs $(LIBFILE) $(EXAMPLES) $(FORMS) .SYMBOLIC
 
 lib : dirs $(LIBFILE) .SYMBOLIC
 
@@ -196,6 +212,13 @@ dirs : .SYMBOLIC
 .asm.obj : .AUTODEPEND
     $(ASM) $(AFLAGS) -fr=$(OBJDIR)\$^&.err -fo=$(OBJDIR)\$^. $[@
 
+# genform.cpp is compiled twice, once per forms definition header.
+genparts.obj : $(EXDIR)\tvforms\genform.cpp .AUTODEPEND
+    $(CC) $(CFLAGS) -DPARTS -fr=$(OBJDIR)\$^&.err -fo=$(OBJDIR)\$^. $[@
+
+genphone.obj : $(EXDIR)\tvforms\genform.cpp .AUTODEPEND
+    $(CC) $(CFLAGS) -DPHONENUM -fr=$(OBJDIR)\$^&.err -fo=$(OBJDIR)\$^. $[@
+
 $(LIBFILE) : $(OBJS)
     @%create $(OBJDIR)\tv.lbc
     @for %i in ($<) do @%append $(OBJDIR)\tv.lbc +%i
@@ -209,6 +232,7 @@ tvdemo : $(OUTDIR)\tvdemo.exe .SYMBOLIC
 tvedit : $(OUTDIR)\tvedit.exe .SYMBOLIC
 tvhc   : $(OUTDIR)\tvhc.exe   .SYMBOLIC
 tvdir  : $(OUTDIR)\tvdir.exe  .SYMBOLIC
+tvforms : $(OUTDIR)\tvforms.exe $(OUTDIR)\genparts.exe $(OUTDIR)\genphone.exe .SYMBOLIC
 
 $(OUTDIR)\tvdemo.exe : $(TVDEMO_OBJS) $(LIBFILE)
     @%create $(OBJDIR)\$^&.lnk
@@ -230,10 +254,41 @@ $(OUTDIR)\tvdir.exe : $(TVDIR_OBJS) $(LIBFILE)
     @for %i in ($(TVDIR_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
     $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
 
+$(OUTDIR)\tvforms.exe : $(TVFORMS_OBJS) $(LIBFILE)
+    @%create $(OBJDIR)\$^&.lnk
+    @for %i in ($(TVFORMS_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+
+$(OUTDIR)\genparts.exe : $(GENPARTS_OBJS) $(LIBFILE)
+    @%create $(OBJDIR)\$^&.lnk
+    @for %i in ($(GENPARTS_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+
+$(OUTDIR)\genphone.exe : $(GENPHONE_OBJS) $(LIBFILE)
+    @%create $(OBJDIR)\$^&.lnk
+    @for %i in ($(GENPHONE_OBJS)) do @%append $(OBJDIR)\$^&.lnk file $(OBJDIR)\%i
+    $(LINK) system $(SYSTEM) option quiet $(LNKOPTS) $(LDEBUG) name $^@ @$(OBJDIR)\$^&.lnk library $(LIBFILE) $(XLIBS)
+
+# The generators write their data file to the current directory, so run
+# them from the output directory, next to tvforms.exe.
+forms : $(OUTDIR)\parts.f32 $(OUTDIR)\phonenum.f32 .SYMBOLIC
+
+$(OUTDIR)\parts.f32 : $(OUTDIR)\genparts.exe
+    cd $(OUTDIR)
+    .\genparts.exe
+    cd ..
+
+$(OUTDIR)\phonenum.f32 : $(OUTDIR)\genphone.exe
+    cd $(OUTDIR)
+    .\genphone.exe
+    cd ..
+
 clean : .SYMBOLIC
     @if exist $(OBJDIR)\*.obj del $(OBJDIR)\*.obj
     @if exist $(OBJDIR)\*.err del $(OBJDIR)\*.err
     @if exist $(OBJDIR)\*.lbc del $(OBJDIR)\*.lbc
     @if exist $(OUTDIR)\*.exe del $(OUTDIR)\*.exe
+    @if exist $(OUTDIR)\*.f16 del $(OUTDIR)\*.f16
+    @if exist $(OUTDIR)\*.f32 del $(OUTDIR)\*.f32
     @if exist $(OBJDIR)\*.lnk del $(OBJDIR)\*.lnk
     @if exist $(LIBFILE) del $(LIBFILE)

@@ -309,6 +309,7 @@ jobs:
           project/watcom/dos16/*.exe
           project/watcom/dos32/*.exe
           project/watcom/win32/*.exe
+          project/watcom/win32/*.f32
 
     - name: Upload Library
       uses: actions/upload-artifact@v7
