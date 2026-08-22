@@ -247,10 +247,13 @@ wmake -h TARGET=dos16
 
 * `DEBUG=1` for full debug information and no optimization. Without it, the build is optimized.
 * `EXAMPLES=` to override the list of example programs (`tvdemo tvedit tvhc tvdir tvforms` by default).
+* `EXTENDER=` (`dos32` only) to choose the DOS extender the examples are linked for: `dos4g`, the default, or `causeway`. Both ship with Open Watcom. A DOS/4G program needs `dos4gw.exe` next to it or on `PATH` at run time; a CauseWay program has the extender bound into the executable and runs on its own. The library is the same either way, so switching only relinks the examples. Be aware that the CauseWay build has never been seen to run — see [`project/watcom/README.md`](project/watcom/README.md).
 
 Adding `lib` as a goal builds the library alone, and `clean` removes a target's output. Libraries are written to the `LIB` directory, objects and executables to `project/watcom/<TARGET>`.
 
 Open Watcom's `binnt` (or `binw`) directory must be on `PATH`, because `wlink` finds its system definitions there and nowhere else. `WATCOM` must name the installation root: the makefile takes the RTL headers from it, so `INCLUDE` does not need to be set.
+
+`LIB/tvw16.lib` is a large-model library, and applications must be compiled `-ml` to link against it: on 16-bit DOS the memory model is part of the ABI, and a mismatch shows up only as unresolved or wrongly resolved symbols. There is no small, medium or compact build. The 32-bit libraries are flat-model (`-mf`), where the question does not arise.
 
 The library needs `-xr` (RTTI), which the makefile passes. It is not optional: `source/tvision/tobjstrm.cpp` uses `dynamic_cast<void *>`, which Open Watcom rejects without it. Applications do not need it unless they use RTTI themselves.
 

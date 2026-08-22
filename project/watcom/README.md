@@ -26,7 +26,8 @@ clean with no errors (one pre-existing warning, W446 in
 `tvhc`, `tvdir` and `tvforms`.
 
 Runtime behaviour has been exercised on the two DOS targets under FreeDOS 1.4
-in QEMU: `tvdemo`'s menus, shadows, dialogs, file dialog, event viewer, mouse
+in QEMU — `dos32` always with its default DOS/4G extender, never with
+`EXTENDER=causeway`, which is discussed under the limitations below: `tvdemo`'s menus, shadows, dialogs, file dialog, event viewer, mouse
 input, DOS shell and INT 24H critical-error prompt; and every `tvedit`
 status-line key — F1 help, F2 save, F3 open, F5 zoom, F6 next, F10 menu,
 Ctrl-W and Alt-F3 close, Alt-X exit, the Ctrl/Shift Ins and Del clipboard
@@ -55,6 +56,32 @@ These affect anyone using the builds, and are not expected to change soon.
   does not, and the character is typed instead. Borland's 16-bit and 32-bit
   drivers behaved the same way — this is not a port artifact. The grey Insert
   and Delete keys work on both.
+* **The CauseWay build has never been seen to run.** `EXTENDER=causeway`
+  links cleanly and produces a genuinely self-contained executable — the
+  extender is bound into the file by `cwstub.exe`, where the DOS/4G build
+  needs `dos4gw.exe` beside it or on `PATH`. But CauseWay 4.04, the version
+  bundled with Open Watcom 1.9, faults at startup under FreeDOS 1.4 in QEMU:
+  `Exception: 0D, Error code: 1284`, followed by `CauseWay error 09 :
+  Unrecoverable exception`. This is not a Turbo Vision problem — a five-line
+  program whose whole body is `printf("hello")`, compiled with `wcl386
+  -l=causeway`, fails in exactly the same way and at the same address. It was
+  reproduced with JEMMEX loaded (the image's default boot), with
+  `CAUSEWAY=NOVCPI` set, with no memory manager at all (boot menu option 5,
+  which changes CauseWay's info flags from `8026` to `8042` and so does take a
+  different path), and under `-cpu 486` and `-cpu pentium`. Whether it is QEMU,
+  FreeDOS 1.4 or the extender itself is unknown; the option is offered because
+  it costs nothing and CauseWay is free software, whereas DOS/4GW is
+  Tenberry's and redistributable only under the terms in Watcom's
+  `binw\dos4gw.doc`. Do not ship a CauseWay build without testing it.
+* **`tvw16.lib` is large-model only.** The 16-bit memory model is part of the
+  ABI — it decides pointer sizes and how the library reaches its own data —
+  so an application must be compiled `-ml` to link against it. `wlink`
+  diagnoses a mismatch only indirectly, as unresolved symbols or, worse, as
+  symbols that resolve to the wrong thing, so a program built `-mm` may link
+  and then misbehave. There is no small, medium or compact build; the port
+  addresses far data throughout, and `wcstubs.asm` assumes `SS`-relative
+  `DGROUP` addressing. (`tvw32.lib` and `tvwnt.lib` are flat-model `-mf`,
+  where the question does not arise.)
 * **Nothing has run on real hardware.** Every runtime observation above comes
   from QEMU. In particular, no timing measurement is meaningful yet, so
   whether the C++ replacements for the original assembly cost anything
