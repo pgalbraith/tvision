@@ -61,6 +61,16 @@ IFDEF __WASM__
 
 tvHWInfoCtor  PROC    FAR
 
+; The four variables below are near data, written through DS. Borland's large
+; model keeps DS on DGROUP, so the routine under ELSE does not load it; Watcom
+; lets DS float, so this does, the same way the two routines below do before
+; they read tvBiosSel. THardwareInfo is a function-local static in
+; tapplica.cpp, built from ordinary C++ code rather than from startup code, so
+; there is nothing to say what DS holds on entry.
+        PUSH    DS
+        MOV     AX, SEG DGROUP
+        MOV     DS, AX
+
 ; Are we running in protected mode?
         MOV     AX, 352FH   ; Check for a null INT 2F handler first
         INT     21H         ; just in case.
@@ -92,6 +102,7 @@ tvHWInfoCtor  PROC    FAR
         INT     31H
         MOV     [tvColorSel], AX
 
+        POP     DS
         RET
 
 @@nodpmi:
@@ -100,6 +111,7 @@ tvHWInfoCtor  PROC    FAR
         MOV     [tvMonoSel], 0B000H
         MOV     [tvColorSel], 0B800H
 
+        POP     DS
         RET
 tvHWInfoCtor  ENDP
 
