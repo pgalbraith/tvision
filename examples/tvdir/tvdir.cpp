@@ -29,7 +29,7 @@
 #define Uses_TScreen
 #define Uses_TText
 #include <tvision/tv.h>
-#include <dos.h>
+#include <tvision/compat/borland/dos.h>
 #include <string.h>
 #include <stdio.h>
 #include <strstrea.h>

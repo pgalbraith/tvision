@@ -58,5 +58,8 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Makefile
+# ... but not the hand-written Open Watcom one (core.ignorecase on Windows
+# makes the pattern above match it).
+!project/watcom/makefile
 cmake_install.cmake
 compile_commands.json

@@ -20,7 +20,7 @@
 #endif  // __HELPBASE_H
 
 #if !defined( __DIR_H )
-#include <dir.h>
+#include <tvision/compat/borland/dir.h>
 #endif  // __DIR_H
 
 const int MAXSTRSIZE=256;

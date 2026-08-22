@@ -278,6 +278,47 @@ jobs:
         path: |
           LIB/tv.lib
 
+  build-watcom:
+    name: Open Watcom (DOS16, DOS/4G, Win32)
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install Open Watcom 1.9
+      uses: open-watcom/setup-watcom@v0
+      with:
+        version: "1.9"
+
+    - name: Build (DOS16)
+      shell: bash
+      run: cd project/watcom && wmake -h TARGET=dos16
+
+    - name: Build (DOS/4G)
+      shell: bash
+      run: cd project/watcom && wmake -h TARGET=dos32
+
+    - name: Build (Win32)
+      shell: bash
+      run: cd project/watcom && wmake -h TARGET=win32
+
+    - name: Upload Examples
+      uses: actions/upload-artifact@v7
+      with:
+        name: examples-watcom
+        path: |
+          project/watcom/dos16/*.exe
+          project/watcom/dos32/*.exe
+          project/watcom/win32/*.exe
+
+    - name: Upload Library
+      uses: actions/upload-artifact@v7
+      with:
+        name: library-watcom
+        path: |
+          LIB/tvw16.lib
+          LIB/tvw32.lib
+          LIB/tvwnt.lib
+
   build-macos-clang:
     name: MacOS (Clang)
     runs-on: macos-latest
