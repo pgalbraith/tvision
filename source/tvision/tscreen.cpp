@@ -54,6 +54,7 @@ ushort TDisplay::getCursorType() noexcept
     if( isEGAorVGA() )
     {
         r.w.ax = 0x1130;
+        r.h.bh = 0;     // Selects the font; getRows() below sets it too.
         r.h.bl = 0;
         int86( 0x10, &r, &r );
         base = r.h.cl;
@@ -130,6 +131,7 @@ void TDisplay::setCursorType( ushort ct ) noexcept
         if( isEGAorVGA() )
             {
             r.w.ax = 0x1130;
+            r.h.bh = 0;     // Selects the font; getRows() sets it too.
             r.h.bl = 0;
             int86( 0x10, &r, &r );
             base = r.h.cl;
