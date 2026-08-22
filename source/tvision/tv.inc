@@ -11,13 +11,11 @@
 ;       All Rights Reserved.
 ; 
 
-; TVWRITE.INC / TVWRIT32.INC hold the class member offsets that the .asm
-; translations of TVWRITE.ASM, TVCURSOR.ASM and friends index with. They are
-; produced by running GENINC.EXE, which the Borland makefile builds for the
-; target first. The Open Watcom build has no equivalent step, and needs none:
-; the only .asm files it assembles (HARDWARE.ASM, SWAPST.ASM, WCSTUBS.ASM)
-; use no member offsets, since every file that does is compiled from its C++
-; twin instead.
+; TVWRITE.INC and TVWRIT32.INC hold the class member offsets that TVWRITE.ASM,
+; TVCURSOR.ASM and the rest index with, and GENINC.EXE produces them. The Open
+; Watcom build needs neither: the three files it assembles (HARDWARE.ASM,
+; SWAPST.ASM, WCSTUBS.ASM) use no member offsets, because every file that does
+; is compiled from C++ instead.
 
 ifdef __FLAT__ ;;;;;;;;;;;;;;;;;;;;;;;; 32-bit ;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,9 +40,8 @@ endif
 else    ;;;;;;;;;;;;;;;;;;;;;;;; 16-bit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ifdef __WASM__
-    ; Open Watcom's assembler doesn't support TASM's PROLOG auto-generation
-    ; extension, so procedures in the 16-bit .asm files spell out their own
-    ; prologue/epilogue explicitly under __WASM__ (see USES/RET usage below).
+    ; WASM has no equivalent of TASM's PROLOG directive, so the 16-bit .asm
+    ; files write their own prologue and epilogue under __WASM__.
     .MODEL LARGE, C
 else
     MODEL  LARGE, PROLOG

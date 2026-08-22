@@ -16,12 +16,11 @@ IFNDEF __FLAT__
         PUBLIC  tvMouseIntStub
         PUBLIC  tvCallOnAltStack
 
-; Open Watcom's large data model reaches DGROUP through SS, not DS (DS is
-; left free for far data), and its generated code checks the stack against
-; __STACKLOW. So a C function entered from an interrupt - where SS belongs to
-; whoever was interrupted - has to be given a stack of our own inside DGROUP
-; first. The two stubs below do that; the sizes are what the code called on
-; each stack needs, with room for an interrupt to land on top:
+; In the large data model Open Watcom reaches DGROUP through SS, not DS, and
+; its generated code checks the stack against __STACKLOW. A C function entered
+; from an interrupt runs on whatever stack was interrupted, so it has to be
+; given one inside DGROUP first. The two stubs below do that. The sizes are
+; what the code on each stack needs, with room for an interrupt on top:
 ;
 ;   tvIntStack   the INT 33h mouse callback, which only queues an event.
 ;   tvCritStack  TSystemError::sysErr, which formats a message and puts up a
@@ -39,9 +38,8 @@ tvCritStackTop  LABEL   BYTE
 
         .DATA
 
-; The bound Open Watcom's generated stack overflow check (__STK) compares
-; against. Spelled without the leading underscore the C library's symbol
-; carries, because '.MODEL <model>, C' prepends one.
+; The limit Open Watcom's generated stack check (__STK) compares against.
+; Written without a leading underscore, because '.MODEL <model>, C' adds one.
         EXTRN   _STACKLOW : WORD
 
         .CODE
@@ -49,8 +47,8 @@ tvCritStackTop  LABEL   BYTE
 ; Called asynchronously by the INT 33h mouse driver with:
 ;   AX = event flag mask, BX = button state (BH = wheel, CuteMouse),
 ;   CX = X coordinate, DX = Y coordinate.
-; Saves every register, moves onto our own stack and data segment, and
-; forwards the register values to the C function
+; Saves every register, switches to tvIntStack and DGROUP, and forwards the
+; register values to the C function
 ;   void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
 ;                                unsigned x, unsigned y );
 tvMouseIntStub PROC FAR
@@ -112,9 +110,9 @@ tvMouseIntStub ENDP
 ; void __cdecl tvCallOnAltStack( void (far *fn)( void ) );
 ;
 ; Calls 'fn' on tvCritStack. Used by the INT 24H critical error handler in
-; WCSYSINT.CPP: DOS enters that handler on a stack of its own, far too small
-; for the prompt Turbo Vision puts up there, and possibly in a segment other
-; than DGROUP.
+; WCSYSINT.CPP: DOS enters that handler on a stack of its own, too small for
+; the prompt Turbo Vision puts up there, and possibly in a segment other than
+; DGROUP.
 tvCallOnAltStack PROC FAR
         PUSH    BP
         MOV     BP, SP

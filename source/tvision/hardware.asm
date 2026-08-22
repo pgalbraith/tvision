@@ -18,9 +18,8 @@
 
 IFNDEF __FLAT__
 IFDEF __WASM__
-; Watcom C++'s name mangling scheme is unrelated to Borland's, so these
-; routines are called through plain extern "C" wrapper functions on the
-; C++ side (see hardware.h/hardwrvr.cpp) instead of matching a mangled name.
+; Watcom mangles C++ names differently from Borland, so these routines are
+; extern "C" and are wrapped on the C++ side (hardware.h, hardwrvr.cpp).
         PUBLIC  tvHWInfoCtor
         PUBLIC  tvHWInfoDtor
         PUBLIC  tvGetBiosEquipmentFlag
@@ -48,8 +47,8 @@ IFDEF __WASM__
 ELSE
         CODESEG
 ENDIF
-; DGROUP (a segmented-memory concept) doesn't exist under WASM's flat model,
-; and this file has no real content in the __FLAT__ case anyway (see below).
+; DGROUP does not exist in the flat model, and this file has nothing to do
+; in the __FLAT__ case anyway.
 IFNDEF __FLAT__
         ASSUME DS:DGROUP
 ENDIF

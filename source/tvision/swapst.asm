@@ -35,10 +35,9 @@ ENDIF
 
 IFDEF __WASM__
 
-; Watcom version. Rather than referencing C++ statics through a
-; compiler-specific name mangling scheme, everything is received as plain
-; extern "C" arguments; TSystemError::swapStatusLine wraps this on the
-; C++ side (see syserr.cpp).
+; Watcom version. Takes everything as plain extern "C" arguments instead of
+; referring to TScreen's members by their mangled C++ names.
+; TSystemError::swapStatusLine wraps it on the C++ side (syserr.cpp).
 ;
 ; void tvSwapStatusLine( void far *bufData, void far *scrBuf,
 ;                        unsigned width, unsigned height );
