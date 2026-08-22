@@ -285,7 +285,7 @@ jobs:
     - uses: actions/checkout@v7
 
     - name: Install Open Watcom 1.9
-      uses: open-watcom/setup-watcom@v0
+      uses: open-watcom/setup-watcom@v1
       with:
         version: "1.9"
 

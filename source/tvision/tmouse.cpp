@@ -26,6 +26,7 @@
 
 uchar _NEAR THWMouse::buttonCount = 0;
 Boolean _NEAR THWMouse::handlerInstalled = False;
+Boolean _NEAR THWMouse::noMouse = False;
 
 THWMouse::THWMouse() noexcept
 {

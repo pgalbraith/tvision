@@ -40,6 +40,26 @@ static int keyWaiting()
     return BIOS_KBDHEAD != BIOS_KBDTAIL;
 }
 
+// The BIOS keeps the shift state at 0040:0017 in its own bit layout, while
+// the __FLAT__ build reads controlKeyState with Win32's (tkeys.h). They are
+// not the same: BIOS bit 3 is Alt, but 0x0008 is LEFT_CTRL_PRESSED, so an
+// untranslated byte turns Alt-X into Ctrl-X once TKey normalizes it and no
+// menu or status line hotkey matches. The byte cannot tell left from right
+// Ctrl and Alt (0040:0018 can), and TKey does not care.
+static ushort controlKeyState()
+{
+    uchar bios = BIOS_SHIFTSTATE;
+    ushort state = 0;
+    if( bios & 0x03 ) state |= kbShift;
+    if( bios & 0x04 ) state |= kbLeftCtrl;
+    if( bios & 0x08 ) state |= kbLeftAlt;
+    if( bios & 0x10 ) state |= kbScrollState;
+    if( bios & 0x20 ) state |= kbNumState;
+    if( bios & 0x40 ) state |= kbCapsState;
+    if( bios & 0x80 ) state |= kbInsState;
+    return state;
+}
+
 static TScreenCell *videoMem()
 {
     return (TScreenCell *) ( BIOS_MODE == 7 ? 0xB0000 : 0xB8000 );
@@ -264,7 +284,7 @@ BOOL THardwareInfo::getMouseEvent( MouseEventType& event ) noexcept
     event.where.x = r.w.cx >> 3;
     event.where.y = r.w.dx >> 3;
     event.eventFlags = 0;
-    event.controlKeyState = BIOS_SHIFTSTATE;
+    event.controlKeyState = controlKeyState();
 
     if( event.buttons != lastMouseState.buttons ||
         event.wheel != 0 ||
@@ -288,7 +308,7 @@ BOOL THardwareInfo::getKeyEvent( TEvent& event ) noexcept
 
     event.what = evKeyDown;
     event.keyDown.keyCode = r.w.ax;
-    event.keyDown.controlKeyState = BIOS_SHIFTSTATE;
+    event.keyDown.controlKeyState = controlKeyState();
     return True;
 }
 

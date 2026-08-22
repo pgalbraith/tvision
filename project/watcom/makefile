@@ -10,7 +10,8 @@
 #   TARGET defaults to dos16. Run from this directory. Libraries go to
 #   ..\..\LIB, objects and executables to .\<TARGET>. Other macros:
 #
-#       DEBUG=1     full debug info (-d2 / -d1, wlink debug all)
+#       DEBUG=1     full debug info (-d2 / -d1, wlink debug all) and no
+#                   optimization; without it the compiler optimizes
 #       EXAMPLES=   override the example list
 #                   (default: tvdemo tvedit tvhc tvdir tvforms)
 #
@@ -24,7 +25,10 @@
 #
 #   Open Watcom's binnt (or binw) directory must be on PATH: wlink only finds
 #   its system definitions (wlsystem.lnk) through PATH, not by absolute
-#   invocation.
+#   invocation. WATCOM must name the installation root; the RTL headers are
+#   taken from there rather than from INCLUDE, so the makefile does not
+#   depend on how the environment was set up (open-watcom/setup-watcom's
+#   default INCLUDE, for one, has no h\nt).
 #
 #   Notes that are easy to lose:
 #
@@ -64,6 +68,7 @@ SYSTEM  = dos
 LIBNAME = tvw16.lib
 CMODEL  = -bt=dos -ml
 AMODEL  = -0 -ml
+RTLINC  = -i=$(%WATCOM)\h
 LNKOPTS = option stack=8k
 AOBJS   = hardware.obj swapst.obj wcstubs.obj
 XDEFS   =
@@ -76,6 +81,7 @@ SYSTEM  = dos4g
 LIBNAME = tvw32.lib
 CMODEL  = -bt=dos -mf
 AMODEL  = -3 -mf
+RTLINC  = -i=$(%WATCOM)\h
 LNKOPTS = option stack=32k
 AOBJS   =
 XDEFS   =
@@ -88,6 +94,7 @@ SYSTEM  = nt
 LIBNAME = tvwnt.lib
 CMODEL  = -bt=nt -mf
 AMODEL  = -3 -mf
+RTLINC  = -i=$(%WATCOM)\h -i=$(%WATCOM)\h\nt
 LNKOPTS = option stack=32k
 AOBJS   =
 XDEFS   = -D_WIN32_WINNT=0x0501
@@ -97,12 +104,19 @@ FORMS   = forms
 !error TARGET must be one of dos16, dos32, win32
 !endif
 
+!ifndef %WATCOM
+!error WATCOM must be set to the Open Watcom installation directory
+!endif
+
+# -obmiler -ot is -ox (the usual release setting) minus -s, so stack overflow
+# checking stays on, and without -oa: relaxed aliasing is unsafe for
+# TScreenCell, which reinterprets itself through a ushort pointer.
 !ifdef DEBUG
-CDEBUG  = -d2
+CDEBUG  = -d2 -od
 ADEBUG  = -d1
 LDEBUG  = debug all
 !else
-CDEBUG  =
+CDEBUG  = -obmiler -ot
 ADEBUG  =
 LDEBUG  =
 !endif
@@ -111,7 +125,7 @@ LIB     = wlib
 LINK    = wlink
 LIBFILE = $(LIBDIR)\$(LIBNAME)
 
-CFLAGS  = $(CMODEL) -zq -xr -w1 $(CDEBUG) $(XDEFS) -i=$(TVINC)
+CFLAGS  = $(CMODEL) -zq -xr -w1 $(CDEBUG) $(XDEFS) -i=$(TVINC) $(RTLINC)
 AFLAGS  = $(AMODEL) -q -zq $(ADEBUG)
 
 # --------------------------------------------------------------- path search
