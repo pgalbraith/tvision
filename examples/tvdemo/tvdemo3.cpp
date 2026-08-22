@@ -72,11 +72,13 @@ void TVDemo::openFile( const char *fileSpec )
     TFileDialog *d= (TFileDialog *)validView(
     new TFileDialog(fileSpec, "Open a File", "~N~ame", fdOpenButton, 100 ));
 
+    if( d != 0 )
+        d->helpCtx = hcFOFileOpenDBox;
+
     if( d != 0 && deskTop->execView( d ) != cmCancel )
         {
         char fileName[MAXPATH];
         d->getFileName( fileName );
-        d->helpCtx = hcFOFileOpenDBox;
         TView *w= validView( new TFileWindow( fileName ) );
         if( w != 0 )
             deskTop->insert(w);
