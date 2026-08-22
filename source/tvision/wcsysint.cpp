@@ -54,6 +54,7 @@ const unsigned
     biosKeyBufHead  = 0x1A,
     biosKeyBufTail  = 0x1C,
     biosBreakFlag   = 0x71,     // Bit 7 set by the BIOS on Ctrl+Break.
+    biosKeyFlags3   = 0x96,     // Bit 1: the last scan code was an E0 prefix.
     biosKeyBufOrg   = 0x80,
     biosKeyBufEnd   = 0x82;
 
@@ -108,15 +109,35 @@ static Boolean handlersInstalled = False;
 
 static void __interrupt _FAR int09Handler()
 {
-    // Sample the scan code, the shift state and the buffer tail before the
-    // BIOS gets the key: if it queues a keystroke we want to replace, the
-    // tail is how we find the slot it used.
+    // Remember the buffer tail before the BIOS gets the key: if it queues a
+    // keystroke we want to replace, the tail is how we find the slot it used.
     ushort tail = *biosWord( biosKeyBufTail );
-    uchar scan = (uchar) inp( 0x60 );
-    uchar flags = *biosByte( biosKeyFlags );
+    uchar scan;
+    uchar flags;
     int i;
 
     oldInt09();
+
+    // Borland's handler sampled port 60H *before* chaining, trusting the
+    // keyboard controller to hand the BIOS the same byte again. A controller
+    // that pops its output buffer on every read (QEMU's i8042, for one)
+    // instead serves the BIOS the *next* byte, so the E0 prefix of a grey
+    // cursor key vanished and the key that followed was delivered twice.
+    // So the BIOS goes first, and the scan code comes from the keystroke it
+    // queued; port 60H is only read when it queued nothing - for the keys
+    // the conversion table exists for, the ones old BIOSes drop - and never
+    // on the E0 prefix itself, when the next byte may already be waiting.
+    flags = *biosByte( biosKeyFlags );
+    if( tail != *biosWord( biosKeyBufTail ) )
+        {
+        scan = (uchar) (*biosWord( tail ) >> 8);
+        if( scan == 0x92 || scan == 0x93 )  // Enhanced BIOS Ctrl+Ins/Del.
+            scan -= 0x40;
+        }
+    else if( (*biosByte( biosKeyFlags3 ) & 0x02) != 0 )
+        scan = 0x80;                    // E0 prefix: nothing to convert.
+    else
+        scan = (uchar) inp( 0x60 );     // Already consumed: the byte stays.
 
     if( (scan & 0x80) == 0 )            // Key presses only, not releases.
         for( i = 0; i < keyConvertCnt; ++i )
