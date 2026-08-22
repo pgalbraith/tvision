@@ -23,6 +23,12 @@
 #   since both are __FLAT__ targets. For dos16, run .\dos16\genparts.exe
 #   and genphone.exe under DOS to get the .f16 files.
 #
+#   tvdemo opens its help file (F1) from the current directory, so the
+#   'help' target copies the checked-in examples\tvdemo\demohelp.h16 (dos16)
+#   or demohelp.h32 (dos32, win32) next to tvdemo.exe. The files are not
+#   regenerated: they ship with the repository, together with demohelp.h,
+#   which holds the matching help context numbers.
+#
 #   Open Watcom's binnt (or binw) directory must be on PATH: wlink only finds
 #   its system definitions (wlsystem.lnk) through PATH, not by absolute
 #   invocation. WATCOM must name the installation root; the RTL headers are
@@ -74,6 +80,7 @@ AOBJS   = hardware.obj swapst.obj wcstubs.obj
 XDEFS   =
 XLIBS   =
 FORMS   =
+HELPEXT = h16
 !else ifeq TARGET dos32
 CC      = wpp386
 ASM     = wasm
@@ -87,6 +94,7 @@ AOBJS   =
 XDEFS   =
 XLIBS   =
 FORMS   =
+HELPEXT = h32
 !else ifeq TARGET win32
 CC      = wpp386
 ASM     = wasm
@@ -100,6 +108,7 @@ AOBJS   =
 XDEFS   = -D_WIN32_WINNT=0x0501
 XLIBS   = library psapi.lib
 FORMS   = forms
+HELPEXT = h32
 !else
 !error TARGET must be one of dos16, dos32, win32
 !endif
@@ -211,7 +220,7 @@ GENPHONE_OBJS = genphone.obj $(FORMS_OBJS)
 
 # -------------------------------------------------------------------- rules
 
-all : dirs $(LIBFILE) $(EXAMPLES) $(FORMS) .SYMBOLIC
+all : dirs $(LIBFILE) $(EXAMPLES) help $(FORMS) .SYMBOLIC
 
 lib : dirs $(LIBFILE) .SYMBOLIC
 
@@ -297,6 +306,12 @@ $(OUTDIR)\phonenum.f32 : $(OUTDIR)\genphone.exe
     .\genphone.exe
     cd ..
 
+# tvdemo looks for its help file in the current directory.
+help : $(OUTDIR)\demohelp.$(HELPEXT) .SYMBOLIC
+
+$(OUTDIR)\demohelp.$(HELPEXT) : $(EXDIR)\tvdemo\demohelp.$(HELPEXT)
+    copy $[@ $^@ >nul
+
 clean : .SYMBOLIC
     @if exist $(OBJDIR)\*.obj del $(OBJDIR)\*.obj
     @if exist $(OBJDIR)\*.err del $(OBJDIR)\*.err
@@ -304,5 +319,6 @@ clean : .SYMBOLIC
     @if exist $(OUTDIR)\*.exe del $(OUTDIR)\*.exe
     @if exist $(OUTDIR)\*.f16 del $(OUTDIR)\*.f16
     @if exist $(OUTDIR)\*.f32 del $(OUTDIR)\*.f32
+    @if exist $(OUTDIR)\demohelp.* del $(OUTDIR)\demohelp.*
     @if exist $(OBJDIR)\*.lnk del $(OBJDIR)\*.lnk
     @if exist $(LIBFILE) del $(LIBFILE)
