@@ -13,9 +13,10 @@ example programs with Open Watcom 1.9, for three targets:
 wmake -h TARGET=dos16
 ```
 
-The head of [`makefile`](makefile) documents the options, the flags each target
-needs and the constraints behind them. This file records what has been seen to
-work, and what has not.
+The [root README](../../README.md#build-watcom) describes how to use these
+builds; the head of [`makefile`](makefile) documents the options, the flags each
+target needs and the constraints behind them. This file records what has been
+seen to work, and what has not.
 
 ## Verification status
 

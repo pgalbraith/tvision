@@ -28,6 +28,7 @@ The original location of this project is https://github.com/magiblot/tvision.
     * [Windows (MSVC)](#build-msvc)
     * [Windows (MinGW)](#build-mingw)
     * [Windows/DOS (Borland C++)](#build-borland)
+    * [Windows/DOS (Open Watcom)](#build-watcom)
     * [Vcpkg](#build-vcpkg)
     * [Turbo Vision as a CMake dependency](#build-cmake)
 * [Features](#features)
@@ -77,6 +78,7 @@ If you just want to test the demo applications:
     * `examples-x64.zip`: 64-bit executables built with MSVC. x64 Windows Vista or later required.
     * `examples-dos.zip`: 16-bit DOS executables built with Borland C++. No Unicode support.
     * `examples-dpmi32.zip`: 32-bit Windows/DOS executables built with Borland C++. No Unicode support.
+    * `examples-watcom.zip`: 16-bit DOS, 32-bit DOS/4G and Win32 executables built with Open Watcom. No Unicode support.
 
 ## Build environment
 
@@ -220,6 +222,42 @@ This will compile the library into a `LIB` directory next to `project`, and will
 
 I'm sorry, the root makefile assumes it is executed from the `project` directory. You can still run the original makefiles directly (in `source/tvision` and `examples/*`) if you want to use different settings.
 
+<div id="build-watcom"></div>
+
+### Windows/DOS (Open Watcom)
+
+Turbo Vision can also be built with Open Watcom 1.9, which targets the same legacy environments as Borland C++. Everything this document says about Borland C++ builds applies to Open Watcom builds too: there is no Unicode support, and none of the features listed as unavailable on Borland C++ are available here either.
+
+Three targets are supported:
+
+| `TARGET` | Environment | Library |
+| --- | --- | --- |
+| `dos16` | 16-bit real mode DOS, large model | `LIB/tvw16.lib` |
+| `dos32` | 32-bit DOS/4G extender, flat model | `LIB/tvw32.lib` |
+| `win32` | 32-bit Win32 console, flat model | `LIB/tvwnt.lib` |
+
+The makefile is in `project/watcom` and is built with `wmake`:
+
+```sh
+cd project/watcom
+wmake -h TARGET=dos16
+```
+
+`TARGET` defaults to `dos16`. The other macros are:
+
+* `DEBUG=1` for full debug information and no optimization. Without it, the build is optimized.
+* `EXAMPLES=` to override the list of example programs (`tvdemo tvedit tvhc tvdir tvforms` by default).
+
+Adding `lib` as a goal builds the library alone, and `clean` removes a target's output. Libraries are written to the `LIB` directory, objects and executables to `project/watcom/<TARGET>`.
+
+Open Watcom's `binnt` (or `binw`) directory must be on `PATH`, because `wlink` finds its system definitions there and nowhere else. `WATCOM` must name the installation root: the makefile takes the RTL headers from it, so `INCLUDE` does not need to be set.
+
+The library needs `-xr` (RTTI), which the makefile passes. It is not optional: `source/tvision/tobjstrm.cpp` uses `dynamic_cast<void *>`, which Open Watcom rejects without it. Applications do not need it unless they use RTTI themselves.
+
+The `tvforms` example needs the data files that its `genparts` and `genphone` programs write. The `win32` build runs them itself, producing `parts.f32` and `phonenum.f32`, which serve the `dos32` build as well, since both are flat-model targets. For `dos16`, run `dos16/genparts.exe` and `dos16/genphone.exe` under DOS to get the `.f16` files.
+
+[`project/watcom/README.md`](project/watcom/README.md) records what has been verified on each target and the known limitations of the resulting builds.
+
 <div id="build-vcpkg"></div>
 
 ### Vcpkg
@@ -238,7 +276,7 @@ The `tvision` port in vcpkg is kept up to date by Microsoft team members and com
 
 <div id="build-cmake"></div>
 
-### Turbo Vision as a CMake dependency (not Borland C++)
+### Turbo Vision as a CMake dependency (not Borland C++ or Open Watcom)
 
 If you choose the CMake build system for your application, there are two main ways to link against Turbo Vision:
 
@@ -285,7 +323,7 @@ In either case, `<tvision/tv.h>` will be available in your application's include
 
 ## Features
 
-### Modern platforms (not Borland C++)
+### Modern platforms (not Borland C++ or Open Watcom)
 
 * UTF-8 support. You can try it out in the `tvedit` application.
 * 24-bit color support (up from the original 16 colors).
@@ -335,7 +373,7 @@ The following environment variables are also taken into account:
 * Only compatible with the Win32 Console API. On terminal emulators that don't support this, Turbo Vision will automatically pop up a separate console window.
 * Applications fit the console window size instead of the buffer size (no scrollbars are visible) and the console buffer is restored when exiting or suspending Turbo Vision.
 
-The following are not available when compiling with Borland C++:
+The following are not available when compiling with Borland C++ or Open Watcom:
 
 * The console's code page is set to UTF-8 on startup and restored on exit.
 * Microsoft's C runtime functions are set automatically to UTF-8 mode, so you as a developer don't need to use the `wchar_t` variants.
@@ -468,7 +506,7 @@ The Turbo Vision API has been extended to allow receiving Unicode input and disp
 * It is the same encoding used for terminal I/O, so redundant conversions are avoided.
 * Several other advantages enumerated in the [UTF-8 Everywhere Manifesto](http://utf8everywhere.org/).
 
-Note that when built with Borland C++, Turbo Vision does not support Unicode. However, this does not affect the way Turbo Vision applications are written, since the API extensions are designed to allow for encoding-agnostic code.
+Note that when built with Borland C++ or Open Watcom, Turbo Vision does not support Unicode. However, this does not affect the way Turbo Vision applications are written, since the API extensions are designed to allow for encoding-agnostic code.
 
 ## Reading Unicode input
 
@@ -621,7 +659,7 @@ int strwidth(TStringView s); // New
 ```
 Returns the displayed length of `s`.
 
-On Borland C++, these methods assume a single-byte encoding and all characters being one column wide. This makes it possible to write encoding-agnostic `draw()` and `handleEvent()` methods that work on both platforms without a single `#ifdef`.
+On Borland C++ and Open Watcom, these methods assume a single-byte encoding and all characters being one column wide. This makes it possible to write encoding-agnostic `draw()` and `handleEvent()` methods that work on both platforms without a single `#ifdef`.
 
 The functions above are implemented using the functions from the `TText` namespace, another API extension. You will have to use them directly if you want to fill `TScreenCell` objects with text manually or to use a custom code page translation table. To give an example, below are some of the `TText` functions. You can find all of them with complete descriptions in `<tvision/ttext.h>`.
 
@@ -873,7 +911,7 @@ For example: color support varies among terminals. If the programmer uses a colo
 |![mpv-shot0003](https://user-images.githubusercontent.com/20713561/111095334-7bb6aa00-853d-11eb-9a3f-e7decc0bac7d.png)|![mpv-shot0004](https://user-images.githubusercontent.com/20713561/111095335-7bb6aa00-853d-11eb-9098-38d6f6c3c1da.png)|
 
 Extended color support basically comes down to the following:
-* Turbo Vision has originally used [BIOS color attributes](https://en.wikipedia.org/wiki/BIOS_color_attributes) stored in an `uchar`. `ushort` is used to represent attribute pairs. This is still the case when using Borland C++.
+* Turbo Vision has originally used [BIOS color attributes](https://en.wikipedia.org/wiki/BIOS_color_attributes) stored in an `uchar`. `ushort` is used to represent attribute pairs. This is still the case when using Borland C++ or Open Watcom.
 * In modern platforms a new type `TColorAttr` has been added which replaces `uchar`. It specifies a foreground and background color and a style. Colors can be specified in different formats (BIOS color attributes, 24-bit RGB...). Styles are the typical ones (bold, italic, underline...). There's also `TAttrPair`, which replaces `ushort`.
 * `TDrawBuffer`'s methods, which used to take `uchar` or `ushort` parameters to specify color attributes, now take `TColorAttr` or `TAttrPair`.
 * `TPalette`, which used to contain an array of `uchar`, now contains an array of `TColorAttr`. The `TView::mapColor` method also returns `TColorAttr` instead of `uchar`.
