@@ -306,9 +306,28 @@ BOOL THardwareInfo::getKeyEvent( TEvent& event ) noexcept
     r.h.ah = 0;
     int386( 0x16, &r, &r );
 
+    ushort keyCode = r.w.ax;
+    ushort shiftState = controlKeyState();
+
+    // Views compare keyCode against the kb* constants, which for these
+    // combinations are Borland's own values rather than what an enhanced
+    // BIOS reports: Ctrl+Ins/Del come back as 0x9200/0x9300, and with
+    // NumLock off a shifted keypad Ins/Del is the character the shift
+    // un-inverts to. Borland's drivers delivered the kb* values - the real
+    // mode INT 09H hook rewrites the BIOS buffer, the console driver has its
+    // own key tables - so do the same here, or TEditor's key map (a raw
+    // comparison, unlike TKey) never sees a Ctrl+Del.
+    switch( keyCode )
+        {
+        case 0x9200: keyCode = kbCtrlIns; break;
+        case 0x9300: keyCode = kbCtrlDel; break;
+        case 0x5230: if( shiftState & kbShift ) keyCode = kbShiftIns; break;
+        case 0x532E: if( shiftState & kbShift ) keyCode = kbShiftDel; break;
+        }
+
     event.what = evKeyDown;
-    event.keyDown.keyCode = r.w.ax;
-    event.keyDown.controlKeyState = controlKeyState();
+    event.keyDown.keyCode = keyCode;
+    event.keyDown.controlKeyState = shiftState;
     return True;
 }
 
