@@ -56,7 +56,14 @@ static void dosSetCaretSize( int caretSize, Boolean insertMode )
 
         if( TDisplay::isEGAorVGA() )
             {
+            // INT 10h AX=1130h takes BH, not BL, as the font pointer to
+            // report on. TVCURSOR.ASM cleared BH earlier in the routine and
+            // only BL at the call, so BX was zero by the time it mattered;
+            // carried across to C++ a line at a time, the BH part was lost
+            // and r.h.bh held whatever was on the stack. That made 'base'
+            // wrong, and the caret invisible in tvedit on this target.
             r.w.ax = 0x1130;
+            r.h.bh = 0;
             r.h.bl = 0;
             int86( 0x10, &r, &r );
             base = r.h.cl;
