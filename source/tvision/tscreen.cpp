@@ -21,6 +21,12 @@
 #include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+// Real mode reaches the BIOS through int86() rather than Borland's
+// pseudo-register variables and videoInt(). WCHW16.CPP holds the routines.
+#include <tvision/internal/wcdos16.h>
+#endif
+
 ushort _NEAR TScreen::startupMode = 0xFFFF;
 ushort _NEAR TScreen::startupCursor = 0;
 ushort _NEAR TScreen::screenMode = 0;
@@ -37,34 +43,7 @@ ushort TDisplay::getCursorType() noexcept
 #if defined( __FLAT__ )
     return THardwareInfo::getCaretSize();
 #elif defined( __WATCOMC__ )
-    uchar start, end, base = 8;
-    ushort result;
-    union REGS r;
-
-    r.h.ah = 3;
-    r.h.bh = 0;
-    int86( 0x10, &r, &r );
-
-    start = r.h.ch;
-    end = r.h.cl;
-
-    if( r.w.cx == 0x2000 )
-        return 0;
-
-    if( isEGAorVGA() )
-    {
-        r.w.ax = 0x1130;
-        r.h.bh = 0;     // Selects the font; getRows() below sets it too.
-        r.h.bl = 0;
-        int86( 0x10, &r, &r );
-        base = r.h.cl;
-    }
-
-    start = (ushort) start * 100 / base;
-    end = (ushort) end * 100 / base;
-
-    result = (start << 8) + end;
-    return result;
+    return dosGetCursorType();
 #else
     uchar start, end, base = 8;
     ushort result;
@@ -99,11 +78,7 @@ ushort TDisplay::getCursorType() noexcept
 int TDisplay::isEGAorVGA(void)
 {
 #if defined( __WATCOMC__ )
-    union REGS r;
-    r.h.bl = 0x10;
-    r.h.ah = 0x12;
-    int86( 0x10, &r, &r );
-    return r.h.bl != 0x10;
+    return dosIsEGAorVGA();
 #else
     _BL=0x10;
     _AH=0x12;
@@ -118,33 +93,7 @@ void TDisplay::setCursorType( ushort ct ) noexcept
 #if defined( __FLAT__ )
     THardwareInfo::setCaretSize( ct & 0xFF );
 #elif defined( __WATCOMC__ )
-    uchar start, end, base = 8;
-    union REGS r;
-
-    if( ct == 0 )
-        r.w.cx = 0x2000;
-    else
-        {
-        start = ct >> 8;
-        end = ct & 0xFF;
-
-        if( isEGAorVGA() )
-            {
-            r.w.ax = 0x1130;
-            r.h.bh = 0;     // Selects the font; getRows() sets it too.
-            r.h.bl = 0;
-            int86( 0x10, &r, &r );
-            base = r.h.cl;
-            }
-
-        start = ((ushort) start * base + 50) / 100;
-        end = ((ushort) end * base + 50) / 100;
-
-        r.h.ch = start;
-        r.h.cl = end;
-        }
-    r.h.ah = 1;
-    int86( 0x10, &r, &r );
+    dosSetCursorType( ct );
 #else
     uchar start, end, base = 8;
 
@@ -179,13 +128,7 @@ void TDisplay::clearScreen( uchar w, uchar h ) noexcept
 #if defined( __FLAT__ )
     THardwareInfo::clearScreen( w, h );
 #elif defined( __WATCOMC__ )
-    union REGS r;
-    r.h.bh = 0x07;
-    r.w.cx = 0;
-    r.h.dl = w;
-    r.h.dh = h - 1;
-    r.w.ax = 0x0600;
-    int86( 0x10, &r, &r );
+    dosClearScreen( w, h );
 #else
     _BH = 0x07;
     _CX = 0;
@@ -218,14 +161,7 @@ ushort TDisplay::getRows() noexcept
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenRows();
 #elif defined( __WATCOMC__ )
-    union REGS r;
-    r.w.ax = 0x1130;
-    r.h.bh = 0;
-    r.h.dl = 0;
-    int86( 0x10, &r, &r );
-    if( r.h.dl == 0 )
-        r.h.dl = 24;
-    return r.h.dl + 1;
+    return dosGetRows();
 #else
     _AX = 0x1130;
     _BH = 0;
@@ -242,10 +178,7 @@ ushort TDisplay::getCols() noexcept
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenCols();
 #elif defined( __WATCOMC__ )
-    union REGS r;
-    r.h.ah = 0x0F;
-    int86( 0x10, &r, &r );
-    return r.h.ah;
+    return dosGetCols();
 #else
     _AH = 0x0F;
     videoInt();
@@ -258,13 +191,7 @@ ushort TDisplay::getCrtMode() noexcept
 #if defined( __FLAT__ )
     return THardwareInfo::getScreenMode();
 #elif defined( __WATCOMC__ )
-    union REGS r;
-    r.h.ah = 0x0F;
-    int86( 0x10, &r, &r );
-    ushort mode = r.h.al;
-    if( getRows() > 25 )
-        mode |= smFont8x8;
-    return mode;
+    return dosGetCrtMode();
 #else
     _AH = 0x0F;
     videoInt();
@@ -281,35 +208,7 @@ void TDisplay::setCrtMode( ushort mode ) noexcept
 #if defined( __FLAT__ )
     THardwareInfo::setScreenMode( mode );
 #elif defined( __WATCOMC__ )
-    ushort eflag = THardwareInfo::getBiosEquipmentFlag() & 0xFFCF;
-    eflag |= (mode == smMono) ? 0x30 : 0x20;
-    THardwareInfo::setBiosEquipmentFlag( eflag );
-    THardwareInfo::setBiosVideoInfo( THardwareInfo::getBiosVideoInfo() & 0x00FE );
-
-    union REGS r;
-    r.h.ah = 0;
-    r.h.al = mode;
-    int86( 0x10, &r, &r );
-
-    if( (mode & smFont8x8) != 0 )
-        {
-        r.w.ax = 0x1112;
-        r.h.bl = 0;
-        int86( 0x10, &r, &r );
-
-        if( getRows() > 25 )
-            {
-            THardwareInfo::setBiosVideoInfo( THardwareInfo::getBiosVideoInfo() | 1 );
-
-            r.h.ah = 1;
-            r.w.cx = 0x0607;
-            int86( 0x10, &r, &r );
-
-            r.h.ah = 0x12;
-            r.h.bl = 0x20;
-            int86( 0x10, &r, &r );
-            }
-        }
+    dosSetCrtMode( mode );
 #else
     ushort eflag = THardwareInfo::getBiosEquipmentFlag() & 0xFFCF;
     eflag |= (mode == smMono) ? 0x30 : 0x20;

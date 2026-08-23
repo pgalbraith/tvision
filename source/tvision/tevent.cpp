@@ -40,6 +40,10 @@
 #include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
+#if defined( __WATCOMC__ )
+#include <tvision/internal/wcdos16.h>
+#endif
+
 #endif
 
 #if !defined( __FLAT__ )
@@ -260,35 +264,9 @@ Boolean TEventQueue::getMouseState( TEvent & ev ) noexcept
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
 
-// The mouse driver calls tvMouseIntStub (WCSTUBS.ASM), which saves the
-// registers, points DS at DGROUP, and passes the driver's values here as
-// plain arguments. The Borland version below reads them as pseudo-registers.
-extern "C" void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
-                                        unsigned x, unsigned y )
-{
-    MouseEventType tempMouse;
-
-    tempMouse.buttons = buttons & 0xFF;
-    uchar wheel = buttons >> 8;
-    tempMouse.wheel = wheel == 0 ? 0 : char(wheel) > 0 ? mwDown : mwUp; // CuteMouse
-    tempMouse.eventFlags = 0;
-    tempMouse.where.x = x >> 3;
-    tempMouse.where.y = y >> 3;
-    tempMouse.controlKeyState = THardwareInfo::getShiftState();
-
-    if( (flag & 0x1e) != 0 &&
-        TEventQueue::eventCount < eventQSize )
-        {
-        TEventQueue::eventQTail->what = THardwareInfo::getTickCount();
-        TEventQueue::eventQTail->mouse = TEventQueue::curMouse;
-        if( ++TEventQueue::eventQTail >= TEventQueue::eventQueue + eventQSize )
-            TEventQueue::eventQTail = TEventQueue::eventQueue;
-        TEventQueue::eventCount++;
-        }
-
-    TEventQueue::curMouse = tempMouse;
-    TEventQueue::mouseIntFlag = True;
-}
+// tvMouseIntBody, called by WCSTUBS.ASM's tvMouseIntStub, is defined in
+// WCHW16.CPP: system.h names it a friend of TEventQueue under this exact
+// signature, which is what lets it live outside this file.
 
 #elif !defined( __FLAT__ )
 #pragma saveregs
@@ -453,14 +431,8 @@ Boolean TEventQueue::readKeyPress( TEvent &ev ) noexcept
     if( !THardwareInfo::getKeyEvent( ev ) )
         ev.what = evNothing;
 #elif defined( __WATCOMC__ )
-    if( _bios_keybrd( _KEYBRD_READY ) == 0 )
-        {
-        ev.what = evNothing;
+    if( !dosReadKeyPress( ev ) )
         return False;
-        }
-    ev.what = evKeyDown;
-    ev.keyDown.keyCode = _bios_keybrd( _KEYBRD_READ );
-    ev.keyDown.controlKeyState = THardwareInfo::getShiftState();
 #else
 
 I   MOV AH,1;

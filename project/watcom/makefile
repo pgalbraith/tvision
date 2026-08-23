@@ -56,11 +56,12 @@
 #     reports a mismatch only as unresolved symbols, or as symbols that
 #     resolve to the wrong thing. There is no small, medium or compact
 #     build: the library uses far pointers for data throughout.
-#   - Only hardware.asm, swapst.asm and wcstubs.asm are assembled, and only
-#     for the 16-bit target. Every other .asm file has a C++ equivalent that
-#     is compiled instead. That is why nothing here generates TVWRITE.INC
-#     with the GENINC tool: tv.inc skips that include when assembled by
-#     wasm (__WASM__).
+#   - wcstubs.asm is the only file assembled, and only for the 16-bit target.
+#     None of Borland's own .asm files is: each one either has a C++
+#     equivalent that is compiled instead, or its routines are in wcstubs.asm
+#     under extern "C" names, which is what hardware.asm and swapst.asm
+#     needed. Borland's .asm files and tv.inc are therefore untouched by this
+#     port, and nothing here generates TVWRITE.INC with the GENINC tool.
 #   - geninc.cpp is the Borland GENINC tool, not part of the library.
 #
 !ifndef TARGET
@@ -90,7 +91,7 @@ CMODEL  = -bt=dos -ml
 AMODEL  = -0 -ml
 EXTSTAMP =
 LNKOPTS = option stack=8k
-AOBJS   = hardware.obj swapst.obj wcstubs.obj
+AOBJS   = wcstubs.obj
 FORMS   =
 HELPEXT = h16
 !else ifeq TARGET dos32
@@ -157,10 +158,12 @@ AFLAGS  = $(AMODEL) -q -zq $(ADEBUG)
 TOBJS1 = edits.obj framelin.obj tgrmv.obj ttprvlns.obj tvcursor.obj &
          tvexposd.obj tvwrite.obj
 
-# Watcom-specific platform files: the DOS/4G hardware driver, the 16-bit
-# interrupt layer, findfirst/findnext. Each compiles to an empty object on
-# the target it does not apply to.
-TOBJS2 = wchwdos.obj wcsysint.obj wcdir.obj
+# Watcom-specific platform files: the DOS/4G hardware driver, the real mode
+# one, the 16-bit interrupt layer, findfirst/findnext. Each compiles to an
+# empty object on the target it does not apply to. Code belongs here, rather
+# than in the Turbo Vision source that calls it, so that those files stay as
+# close to upstream as they can.
+TOBJS2 = wchwdos.obj wchw16.obj wcsysint.obj wcdir.obj
 
 TOBJS3 = colorsel.obj drivers.obj  drivers2.obj editstat.obj &
          fmtstr.obj   grp.obj      hardwrvr.obj help.obj     &

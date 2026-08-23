@@ -171,11 +171,125 @@ These affect anyone using the builds and are not expected to change soon.
    gets its data files, but nobody has opened a form with it. That is the only
    way to find out whether the checked-in `.f32` files are correct.
 
-3. **Some routines could be written in assembly again, but need not be.**
-   Seven of the original `.asm` files have C++ equivalents, and those are
-   compiled instead. Only `hardware.asm`, `swapst.asm` and `wcstubs.asm` are
-   assembled, and only for `dos16`. Going back to assembly would also mean
-   restoring the `TVWRITE.INC` include in `tv.inc`, and the step that
-   generates that file. This is only worth doing if a measurement on real
-   hardware shows the C++ versions are slower — see the note about real
-   hardware above.
+3. **Some routines could be written in assembly again, but should not be
+   without a reason.** Seven of the original `.asm` files have C++ equivalents,
+   and those are compiled instead. No file of Borland's is assembled at all:
+   `wcstubs.asm` is the only one, and only for `dos16`. This is only worth
+   revisiting if a measurement on real hardware shows the C++ versions are
+   slower — see the note about real hardware above. The section below records
+   what was learned when it was tried.
+
+## Assembling Borland's original .asm files
+
+None of Borland's `.asm` files is assembled by this build, and none of them is
+modified by it. `wcstubs.asm` is the only assembly the build uses. Two of the
+routines in it, `THardwareInfo`'s constructor group and
+`TSystemError::swapStatusLine`, are copies of routines in `hardware.asm` and
+`swapst.asm`, under `extern "C"` names instead of the Borland-mangled ones
+`wasm` cannot reproduce for a Watcom build. They were kept inside Borland's
+files at first, in `IFDEF __WASM__` blocks, and moved out on 2026-08-22: that
+removed 190 lines of change from `hardware.asm`, `swapst.asm` and `tv.inc`,
+which are now identical to upstream, at the cost of nothing but a longer
+`wcstubs.asm`. The generated code was compared instruction by instruction
+before and after the move, and is the same.
+
+Borland's `.asm` files can be assembled by `wasm` and linked into `tvw16.lib`,
+with their instructions unchanged. This was done for `framelin.asm` on
+2026-08-22 and then reverted. It is written down here so that the question does
+not have to be answered twice.
+
+The result was correct. `tvdemo` with four overlapping windows rendered
+pixel-for-pixel identically to the build using `framelin.cpp`, which exercises
+the frame-joint logic — the part of the routine that decides which line
+character belongs at each place two framed windows meet.
+
+It was reverted because it made the port diverge further from upstream, not
+less. The 16-bit build was compiling `framelin.cpp` exactly as upstream ships
+it, with no changes at all. Assembling `framelin.asm` instead cost 102 added
+lines across four files upstream already owns — `framelin.asm`, `framelin.cpp`,
+`tv.inc` and `tvtext1.cpp` — plus two new files. The `tvtext1.cpp` change was
+the worst of them: it moved the storage of `TFrame::initFrame` and
+`TFrame::frameChars` into `extern "C"` objects, which left both members
+declared in `views.h` but undefined in this build. Every one of those edits
+would have to be carried through each future merge from upstream.
+
+Four things stand between a Borland `.asm` file and this build. None of them is
+a reason to give up, and the third is the one that costs real time.
+
+* **TASM's `PROLOG`, `ARG` and `USES`.** A compatibility layer in `TV.INC`
+  cannot be written: `wasm` 1.9 has neither `:VARARG` macro parameters nor
+  `INSTR`/`SUBSTR`, so a macro cannot take `ARG name:type, ...` apart. What
+  works is giving each routine its own header under `IFDEF __WASM__`, in the
+  form `NAME PROC FAR SYSCALL USES DS SI DI, thisPtr:DWORD, Y:WORD, ...`, and
+  wrapping the `ARG` and `USES` lines in `IFNDEF __WASM__`. `wasm` then builds
+  the same frame TASM's `PROLOG` builds, with arguments from `[BP+6]` upward.
+  `SYSCALL` is the C calling convention without the leading underscore, which
+  is what allows the Borland-mangled name on the `PUBLIC` line to stay as
+  written. `CODESEG` and `DATASEG` can be defined as macros for `.CODE` and
+  `.DATA`. There are 40 routines across the seven files, 20 of which take
+  arguments.
+
+* **Names.** `wasm` accepts `@TFrame@frameLine$qm11TDrawBufferssuc` as a symbol
+  without complaint, but cannot write Watcom's name for the same member,
+  `W?frameLine$:TFrame$f(rf$TDrawBuffer$$ssuc)v`, nor `W?initFrame$:TFrame$n[]xa`
+  for a static data member. Nothing in the assembly has to be renamed for this.
+  Declare the C++ side `extern "C"` and rename it to Borland's spelling with
+  `#pragma aux`:
+
+  ```cpp
+  extern "C" void tvFrameLine( TFrame *, TDrawBuffer *, short, short, TColorAttr );
+  #pragma aux tvFrameLine "@TFrame@frameLine$qm11TDrawBufferssuc" \
+                          parm caller [] modify [ax bx cx dx es];
+  ```
+
+  `parm caller []` puts every argument on the stack and makes the caller clean
+  up, which is what the assembly expects. Do not write `__cdecl` as well: it
+  conflicts with the pragma's naming and Watcom quietly keeps `_tvFrameLine`.
+  The same pragma works on a variable, and renames its definition, but it
+  cannot be applied to a C++ static data member, which is why the storage has
+  to move out of the class.
+
+* **`DS` is not `DGROUP`.** Borland's large model keeps `DS` on `DGROUP`, and
+  the assembly relies on it: near data such as `initFrame`, `frameChars` and a
+  routine's own scratch buffers are all read through `DS`. Watcom's large model
+  lets `DS` float — `-zdf` is its default — so on entry `DS` points somewhere
+  else and every one of those reads returns the wrong bytes. Each ported
+  routine has to load `DGROUP` itself:
+
+  ```asm
+          MOV     AX, SEG DGROUP
+          MOV     DS, AX
+  ```
+
+  with `DS` added to the `USES` list so the generated epilogue restores it.
+  Arguments are unaffected, being reached through `SS:[BP]`.
+
+  The symptom is worth knowing, because it does not look like a segment fault.
+  A scratch buffer is written and read back through the same wrong `DS`, so it
+  stays self-consistent; only the reads of real data go wrong. In
+  `framelin.asm` that produced frames drawn in the correct colour with blank
+  characters, and no crash.
+
+  Compiling the library with `-zdp`, which pegs `DS` to `DGROUP`, would remove
+  the need for this and leave the assembly completely untouched. It cannot be
+  used: Open Watcom 1.9 fails with internal compiler error 40 on
+  `tdirlist.cpp` when `-zdp` is combined with `-ol` and `-oe`, both of which
+  are in the `-obmiler` release setting. Dropping `-oe` avoids the error.
+  Pegging `DS` would also become part of the library's binary interface, in the
+  same way the large memory model already is, so every application linking
+  against `tvw16.lib` would have to be compiled with `-zdp` too.
+
+* **Class member offsets.** The files that index class members need the
+  equates that `GENINC.EXE` produces in `TVWRITE.INC` for the Borland build.
+  Watcom lays the classes out differently, so it needs its own copy. This does
+  not require running anything under DOS. Put each `offsetof()` into a static
+  array inside a function named `genRefs()` — that name matters, because it is
+  what the class headers declare as a friend, and several of the members are
+  protected — compile it with `wpp -bt=dos -ml`, and read the values back out
+  of the object file with `wdis -a`. The offsets should then be re-checked
+  against the headers at compile time, so that a class change breaks the build
+  instead of silently moving what the assembly reads.
+
+`sysint.asm` is not like the other six. It has 12 routines and no `ARG` at all,
+and it overlaps `wcsysint.cpp` rather than having a straight C++ equivalent, so
+it would need looking at on its own terms.

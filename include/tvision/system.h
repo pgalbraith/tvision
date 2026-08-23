@@ -307,7 +307,7 @@ private:
 #if !defined( __FLAT__ )
 #if defined( __WATCOMC__ )
     // The mouse callback body; invoked by the register-saving assembly stub
-    // tvMouseIntStub in WCSTUBS.ASM. See tevent.cpp.
+    // tvMouseIntStub in WCSTUBS.ASM. Defined in WCHW16.CPP.
     friend void __cdecl tvMouseIntBody( unsigned flag, unsigned buttons,
                                         unsigned x, unsigned y );
 #else

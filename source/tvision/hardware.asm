@@ -17,19 +17,6 @@
 
 
 IFNDEF __FLAT__
-IFDEF __WASM__
-; Watcom mangles C++ names differently from Borland, so these routines are
-; extern "C" and are wrapped on the C++ side (hardware.h, hardwrvr.cpp).
-        PUBLIC  tvHWInfoCtor
-        PUBLIC  tvHWInfoDtor
-        PUBLIC  tvGetBiosEquipmentFlag
-        PUBLIC  tvGetBiosSelector
-
-        EXTRN   tvDpmiFlag : BYTE
-        EXTRN   tvColorSel : WORD
-        EXTRN   tvMonoSel : WORD
-        EXTRN   tvBiosSel : WORD
-ELSE
         PUBLIC  @THardwareInfo@$bctr$qv
         PUBLIC  @THardwareInfo@$bdtr$qv
         PUBLIC  @THardwareInfo@getBiosEquipmentFlag$qi
@@ -40,108 +27,13 @@ ELSE
         EXTRN   @THardwareInfo@monoSel : WORD
         EXTRN   @THardwareInfo@biosSel : WORD
 ENDIF
-ENDIF
 
-IFDEF __WASM__
-        .CODE
-ELSE
         CODESEG
-ENDIF
-; DGROUP does not exist in the flat model, and this file has nothing to do
-; in the __FLAT__ case anyway.
-IFNDEF __FLAT__
         ASSUME DS:DGROUP
-ENDIF
 
 ; THardwareInfo non-inline functions
 
 IFNDEF __FLAT__
-
-IFDEF __WASM__
-
-tvHWInfoCtor  PROC    FAR
-
-; The four variables below are near data, written through DS. Borland's large
-; model keeps DS on DGROUP, so the routine under ELSE does not load it; Watcom
-; lets DS float, so this does, the same way the two routines below do before
-; they read tvBiosSel. THardwareInfo is a function-local static in
-; tapplica.cpp, built from ordinary C++ code rather than from startup code, so
-; there is nothing to say what DS holds on entry.
-        PUSH    DS
-        MOV     AX, SEG DGROUP
-        MOV     DS, AX
-
-; Are we running in protected mode?
-        MOV     AX, 352FH   ; Check for a null INT 2F handler first
-        INT     21H         ; just in case.
-        MOV     AX, ES
-        OR      AX, BX
-        JZ    @@nodpmi
-
-        MOV     AX, 0FB42H
-        MOV     BX, 01H
-        INT     2FH
-        CMP     AX, 01H
-        JNE   @@nodpmi
-
-; Yes, in protected mode, thus we need to allocate selectors...
-        MOV     [tvDpmiFlag], 01H
-
-        MOV     AX, 02H
-        MOV     BX, 0040H
-        INT     31H
-        MOV     [tvBiosSel], AX
-
-        MOV     AX, 02H
-        MOV     BX, 0B000H
-        INT     31H
-        MOV     [tvMonoSel], AX
-
-        MOV     AX, 02H
-        MOV     BX, 0B800H
-        INT     31H
-        MOV     [tvColorSel], AX
-
-        POP     DS
-        RET
-
-@@nodpmi:
-        MOV     [tvDpmiFlag], 00H
-        MOV     [tvBiosSel], 00040H
-        MOV     [tvMonoSel], 0B000H
-        MOV     [tvColorSel], 0B800H
-
-        POP     DS
-        RET
-tvHWInfoCtor  ENDP
-
-tvHWInfoDtor  PROC    FAR
-        RET
-tvHWInfoDtor  ENDP
-
-tvGetBiosEquipmentFlag   PROC FAR
-        PUSH    DS
-        MOV     AX, SEG DGROUP
-        MOV     DS, AX
-
-        MOV     BX, 10H
-        MOV     ES, WORD PTR DGROUP:[tvBiosSel]
-        MOV     AX, ES:[BX]
-
-        POP     DS
-        RET
-tvGetBiosEquipmentFlag   ENDP
-
-tvGetBiosSelector    PROC FAR
-        PUSH    DS
-        MOV     AX, SEG DGROUP
-        MOV     DS, AX
-        MOV     AX, WORD PTR DGROUP:[tvBiosSel]
-        POP     DS
-        RET
-tvGetBiosSelector    ENDP
-
-ELSE
 
 @THardwareInfo@$bctr$qv  PROC    FAR
 
@@ -212,8 +104,6 @@ ELSE
         POP     DS
         RET
 @THardwareInfo@getBiosSelector$qv    ENDP
-
-ENDIF
 
 ENDIF
 

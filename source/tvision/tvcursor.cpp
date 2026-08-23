@@ -23,68 +23,11 @@
 #else
 
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
-#if !defined( __DOS_H )
-#include <tvision/compat/borland/dos.h>
-#endif  // __DOS_H
-
-// Real mode has no THardwareInfo caret functions: TVCURSOR.ASM used INT 10h
-// directly, and so does this. So the size passed through
+// Real mode has no THardwareInfo caret functions. WCHW16.CPP drives the
+// caret through INT 10h, as TVCURSOR.ASM did, so the size computed by
 // TVCursor::computeCaretSize is the start/end pair held in
 // TScreen::cursorLines, not the single percentage the 32-bit target uses.
-
-static void dosSetCaretPosition( int x, int y )
-{
-    union REGS r;
-
-    r.h.ah = 2;
-    r.h.bh = 0;
-    r.h.dh = (uchar) y;
-    r.h.dl = (uchar) x;
-    int86( 0x10, &r, &r );
-}
-
-static void dosSetCaretSize( int caretSize, Boolean insertMode )
-{
-    union REGS r;
-
-    if( caretSize == 0 )
-        r.w.cx = 0x2000;                // Hide the caret.
-    else
-        {
-        uchar base = 8;                 // Scan lines per character cell.
-        uchar start, end;
-
-        if( TDisplay::isEGAorVGA() )
-            {
-            // INT 10h AX=1130h takes BH, not BL, as the font pointer to
-            // report on. TVCURSOR.ASM cleared BH earlier in the routine and
-            // only BL at the call, so BX was zero by the time it mattered;
-            // carried across to C++ a line at a time, the BH part was lost
-            // and r.h.bh held whatever was on the stack. That made 'base'
-            // wrong, and the caret invisible in tvedit on this target.
-            r.w.ax = 0x1130;
-            r.h.bh = 0;
-            r.h.bl = 0;
-            int86( 0x10, &r, &r );
-            base = r.h.cl;
-            }
-
-        start = (uchar) (((ushort) (uchar) (caretSize >> 8) * base + 50) / 100);
-        end = (uchar) (((ushort) (uchar) caretSize * base + 50) / 100);
-
-        if( insertMode )
-            {
-            start = 0;                  // Grow the caret up into a block.
-            if( end == 0 )
-                end = 7;
-            }
-
-        r.h.ch = start;
-        r.h.cl = end;
-        }
-    r.h.ah = 1;
-    int86( 0x10, &r, &r );
-}
+#include <tvision/internal/wcdos16.h>
 #endif // __WATCOMC__ && !__FLAT__
 
 struct TVCursor {

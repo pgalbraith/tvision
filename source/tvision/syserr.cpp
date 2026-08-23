@@ -23,6 +23,10 @@
 #include <tvision/compat/borland/dos.h>
 #endif  // __DOS_H
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+#include <tvision/internal/wcdos16.h>
+#endif
+
 #if !defined( __STDIO_H )
 #include <stdio.h>
 #endif  // __STDIO_H
@@ -66,11 +70,7 @@ static void checkIDE()
     Int11trap trap;
 
 #if defined( __WATCOMC__ )
-    // Watcom has no _AX/_BX pseudo-registers or _genInt(); use int86().
-    union REGS r;
-    r.x.ax = SecretWord;
-    r.x.bx = SecretWord;
-    int86( 0x12, &r, &r );
+    dosFireInt12( SecretWord );
 #else
     _BX = SecretWord;
     _AX = SecretWord;

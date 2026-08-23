@@ -23,6 +23,10 @@
 #endif  // __DOS_H
 #endif  // __FLAT__
 
+#if defined( __WATCOMC__ ) && !defined( __FLAT__ )
+#include <tvision/internal/wcdos16.h>
+#endif
+
 
 uchar _NEAR THWMouse::buttonCount = 0;
 Boolean _NEAR THWMouse::handlerInstalled = False;
@@ -39,23 +43,8 @@ void THWMouse::resume() noexcept
     buttonCount = THardwareInfo::getButtonCount();
     show();
 #elif defined( __WATCOMC__ )
-    if( _dos_getvect( 0x33 ) == 0 )
-        return;
-
-    union REGS r;
-    r.w.ax = 0;
-    int86( 0x33, &r, &r );
-
-    if( r.w.ax == 0 )
-        return;
-    buttonCount = r.h.bl;
-
-    r.w.ax = 4;
-    r.w.cx = 0;
-    r.w.dx = 0;
-
-    int86( 0x33, &r, &r );
-    show();
+    if( dosMouseReset( buttonCount ) )
+        show();
 #else
     if( getvect( 0x33 ) == 0 )
         return;
@@ -107,11 +96,7 @@ void THWMouse::show() noexcept
     THardwareInfo::cursorOn();
 #elif defined( __WATCOMC__ )
     if( present() )
-        {
-        union REGS r;
-        r.w.ax = 1;
-        int86( 0x33, &r, &r );
-        }
+        dosMouseShow();
 #else
     asm push ax;
     asm push es;
@@ -133,11 +118,7 @@ void THWMouse::hide() noexcept
     THardwareInfo::cursorOff();
 #elif defined( __WATCOMC__ )
     if( buttonCount != 0 )
-        {
-        union REGS r;
-        r.w.ax = 2;
-        int86( 0x33, &r, &r );
-        }
+        dosMouseHide();
 #else
     asm push ax;
     asm push es;
@@ -161,18 +142,7 @@ void THWMouse::setRange( ushort rx, ushort ry ) noexcept
     (void) ry;
 #if defined( __WATCOMC__ ) && !defined( __FLAT__ )
     if( buttonCount != 0 )
-        {
-        union REGS r;
-        r.w.dx = rx << 3;
-        r.w.cx = 0;
-        r.w.ax = 7;
-        int86( 0x33, &r, &r );
-
-        r.w.dx = ry << 3;
-        r.w.cx = 0;
-        r.w.ax = 8;
-        int86( 0x33, &r, &r );
-        }
+        dosMouseSetRange( rx, ry );
 #elif !defined( __FLAT__ )
     if( buttonCount != 0 )
         {
@@ -200,14 +170,7 @@ void THWMouse::getEvent( MouseEventType& me ) noexcept
     me.where.y = 0;
     me.eventFlags = 0;
 #elif defined( __WATCOMC__ )
-    union REGS r;
-    r.w.ax = 3;
-    int86( 0x33, &r, &r );
-    me.buttons = r.h.bl;
-    me.wheel = r.h.bh == 0 ? 0 : char(r.h.bh) > 0 ? mwDown : mwUp; // CuteMouse
-    me.where.x = r.w.cx >> 3;
-    me.where.y = r.w.dx >> 3;
-    me.eventFlags = 0;
+    dosMouseGetEvent( me );
 #else
     _AX = 3;
     _genInt( 0x33 );
@@ -226,15 +189,7 @@ void THWMouse::registerHandler( unsigned mask, void (_FAR *func)() )
     if( !present() )
         return;
 
-    union REGS r;
-    struct SREGS s;
-    segread( &s );
-    r.w.ax = 12;
-    r.w.cx = mask;
-    r.w.dx = FP_OFF( func );
-    s.es = FP_SEG( func );
-
-    int86x( 0x33, &r, &r, &s );
+    dosMouseRegisterHandler( mask, func );
     handlerInstalled = True;
 }
 #elif !defined( __FLAT__ )
