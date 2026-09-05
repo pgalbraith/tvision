@@ -40,8 +40,25 @@ Use that build for Win32.
 
 ## What has been tested
 
-Last checked on 2026-08-22. Both targets rebuild from scratch without errors,
+Last checked on 2026-09-05. Both targets rebuild from scratch without errors,
 producing the library plus `tvdemo`, `tvedit`, `tvhc`, `tvdir` and `tvforms`.
+
+On 2026-09-05 a merge from `master` (commit `292dee7`) brought in three
+`tvdemo`/`tvhc` commits: a fix for `TCalendarView`'s leap-year formula and its
+next/previous-month mouse arrows (`examples/tvdemo/calendar.cpp`), removal of
+two redundant `virtual` qualifiers (`examples/tvdemo/gadgets.h`), and
+typo fixes to the help text, including regenerated `demohelp.h16`/`.h32`
+binaries that the makefile copies as-is rather than rebuilding. Both targets
+were rebuilt afterward and re-run under FreeDOS 1.4 in QEMU. The Calendar's
+`+`/`-` keyboard navigation was checked on `dos16`. The arrow icons were
+checked on both targets by clicking the up and down triangles with a real
+mouse click delivered through QEMU's QMP socket: the up arrow moves to the
+previous month and the down arrow to the next month, on both `dos16` and
+`dos32`, matching the fixed source rather than the reversed behavior it
+replaced. The default PS/2 mouse emulation did not deliver clicks reliably
+enough for this; the clicks were driven through a `virtio-mouse-pci` device
+with `vio.exe`/`viomouse.exe` from the `virtio-dos` project loaded resident
+in the guest instead.
 
 The build is not free of warnings. Three appear, and all three come from code
 shared with the other builds rather than from the files written for Open
