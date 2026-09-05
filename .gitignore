@@ -11,6 +11,8 @@
 !source/**/
 !test/
 !test/**/
+!watcom/
+!watcom/**/
 !.github/
 !.github/**/
 
@@ -65,6 +67,6 @@ CMakeScripts
 Makefile
 # ... but not the hand-written Open Watcom makefile: git ignores case on
 # Windows, so the pattern above matches it too.
-!project/watcom/makefile
+!watcom/makefile
 cmake_install.cmake
 compile_commands.json

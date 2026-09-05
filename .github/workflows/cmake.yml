@@ -291,22 +291,22 @@ jobs:
 
     - name: Build (DOS16)
       shell: bash
-      run: cd project/watcom && wmake -h TARGET=dos16
+      run: cd watcom && wmake -h TARGET=dos16
 
     - name: Build (DOS/4G)
       shell: bash
-      run: cd project/watcom && wmake -h TARGET=dos32
+      run: cd watcom && wmake -h TARGET=dos32
 
     - name: Upload Examples
       uses: actions/upload-artifact@v7
       with:
         name: examples-watcom
         path: |
-          project/watcom/dos16/*.exe
-          project/watcom/dos32/*.exe
-          project/watcom/dos32/*.f32
-          project/watcom/dos16/demohelp.h16
-          project/watcom/dos32/demohelp.h32
+          watcom/dos16/*.exe
+          watcom/dos32/*.exe
+          watcom/dos32/*.f32
+          watcom/dos16/demohelp.h16
+          watcom/dos32/demohelp.h32
 
     - name: Upload Library
       uses: actions/upload-artifact@v7

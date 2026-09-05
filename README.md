@@ -239,10 +239,10 @@ This build exists so that DOS binaries can be produced from a modern development
 
 There is no Win32 target, because none is needed. [MSVC](#build-msvc) and [MinGW](#build-mingw) already build Turbo Vision for the Win32 console through CMake, from the same modern environment, and with Unicode, UTF-8 console support and 24-bit color as well. Use that build for Win32.
 
-The makefile is in `project/watcom` and is built with `wmake`:
+The makefile is in `watcom` and is built with `wmake`:
 
 ```sh
-cd project/watcom
+cd watcom
 wmake -h TARGET=dos16
 ```
 
@@ -250,9 +250,9 @@ wmake -h TARGET=dos16
 
 * `DEBUG=1` for full debug information and no optimization. Without it, the build is optimized.
 * `EXAMPLES=` to override the list of example programs (`tvdemo tvedit tvhc tvdir tvforms` by default).
-* `EXTENDER=` (`dos32` only) to choose which DOS extender the examples are linked for: `dos4g`, the default, or `causeway`. Both come with Open Watcom. A DOS/4G program needs `dos4gw.exe` beside it or on `PATH` when it runs; a CauseWay program carries the extender inside the executable and runs on its own. The library is the same either way, so changing this only relinks the examples. Note that the CauseWay build has never been seen to run — see [`project/watcom/README.md`](project/watcom/README.md).
+* `EXTENDER=` (`dos32` only) to choose which DOS extender the examples are linked for: `dos4g`, the default, or `causeway`. Both come with Open Watcom. A DOS/4G program needs `dos4gw.exe` beside it or on `PATH` when it runs; a CauseWay program carries the extender inside the executable and runs on its own. The library is the same either way, so changing this only relinks the examples. Note that the CauseWay build has never been seen to run — see [`watcom/README.md`](watcom/README.md).
 
-Adding `lib` to the command builds only the library, and `clean` deletes a target's output. Libraries are written to the `LIB` directory, and object files and executables to `project/watcom/<TARGET>`.
+Adding `lib` to the command builds only the library, and `clean` deletes a target's output. Libraries are written to the `LIB` directory, and object files and executables to `watcom/<TARGET>`.
 
 Open Watcom's `binnt` (or `binw`) directory must be on `PATH`: the linker looks there, and nowhere else, for the files describing the systems it can link for. `WATCOM` must be set to the installation directory, since the makefile takes the run-time library headers from it. `INCLUDE` does not need to be set.
 
@@ -262,7 +262,7 @@ The library must be compiled with `-xr`, which enables run-time type information
 
 The `tvforms` example needs the data files that its `genparts` and `genphone` programs write, and those programs can only run under the target they were built for. The flat-model files are therefore checked in as `examples/tvforms/parts.f32` and `phonenum.f32`, and the `dos32` build copies them next to `tvforms.exe`. There are no checked-in `.f16` files: for `dos16`, run `dos16/genparts.exe` and `dos16/genphone.exe` under DOS to produce them.
 
-[`project/watcom/README.md`](project/watcom/README.md) records what has been tested on each target, and the known limitations of the resulting builds.
+[`watcom/README.md`](watcom/README.md) records what has been tested on each target, and the known limitations of the resulting builds.
 
 <div id="build-vcpkg"></div>
 

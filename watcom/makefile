@@ -10,7 +10,7 @@
 #   MinGW) already covers the Win32 console.
 #
 #   TARGET defaults to dos16. Run from this directory. Libraries go to
-#   ..\..\LIB, object files and executables to .\<TARGET>. Other macros:
+#   ..\LIB, object files and executables to .\<TARGET>. Other macros:
 #
 #       DEBUG=1     full debug information (-d2 / -d1, wlink debug all) and
 #                   no optimization; without it the build is optimized
@@ -23,7 +23,7 @@
 #                   program runs on its own. Both come with Open Watcom. The
 #                   library is the same either way, so this only affects
 #                   linking. The CauseWay build has never been seen to run -
-#                   read project\watcom\README.md before using it.
+#                   read watcom\README.md before using it.
 #
 #   tvforms reads two data files, written by the genparts and genphone
 #   programs. Those can only run under the target they were built for, so the
@@ -68,7 +68,7 @@
 TARGET = dos16
 !endif
 
-TVDIR   = ..\..
+TVDIR   = ..
 TVSRC   = $(TVDIR)\source\tvision
 TVINC   = $(TVDIR)\include
 EXDIR   = $(TVDIR)\examples
